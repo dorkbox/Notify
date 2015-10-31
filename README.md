@@ -15,6 +15,13 @@ Primary Features:
 6. Can close via close button or clicking on notification body
 7. Can show/hide the close button
 8. Can register a callback for when a user clicks on the notification body
-9. Animates to a collated position if multiple noticiations are in the same position
+9. Animates to a collated position if multiple notifications are in the same position
+
 
 - This is for cross-platform use, specifically - linux 32/64, mac 32/64, and windows 32/64. Java 6+
+
+
+![growl-light image](https://raw.githubusercontent.com/dorkbox/Growl/master/growl-light.png)
+
+![growl-dark image](https://raw.githubusercontent.com/dorkbox/Growl/master/growl-dark.png)
+
