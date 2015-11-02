@@ -19,6 +19,7 @@ Primary Features:
 
 
 - This is for cross-platform use, specifically - linux 32/64, mac 32/64, and windows 32/64. Java 6+
+- You will need the images in the 'resources' directory, in addition to the normal libs.
 
 ```
 Growl.IMAGE_PATH    (type String, default value 'resources')
