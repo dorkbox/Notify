@@ -364,7 +364,6 @@ class GrowlPopup extends JFrame {
             // popups at TOP grow down, popups at BOTTOM grow up
 
             int targetY;
-
             if (isShowFromTop(position)) {
                 targetY = anchorY + (popupIndex * (HEIGHT + 10));
             }
@@ -377,7 +376,7 @@ class GrowlPopup extends JFrame {
 
             if (notification.hideAfterDurationInMillis > 0 && hideTween == null) {
                 // begin a timeline to get rid of the popup (default is 5 seconds)
-                hideTween = Tween.set(this, 0, accessor)
+                hideTween = Tween.set(this, GrowlPopupAccessor.OPACITY, accessor)
                                  .delay(FADE_DURATION + (notification.hideAfterDurationInMillis / 1000.0F))
                                  .target(0)
                                  .addCallback(new TweenCallback() {
@@ -388,10 +387,10 @@ class GrowlPopup extends JFrame {
                                      }
                                  });
                 tweenManager.add(hideTween);
-            }
 
-            if (!timer.isRunning()) {
-                timer.start();
+                if (!timer.isRunning()) {
+                    timer.start();
+                }
             }
         }
     }
@@ -407,7 +406,27 @@ class GrowlPopup extends JFrame {
             final int popupIndex = this.popupIndex;
             final ArrayList<GrowlPopup> growlPopups = popups.get(idAndPosition);
             int length = growlPopups.size();
+
             final ArrayList<GrowlPopup> copies = new ArrayList<GrowlPopup>(length);
+
+            // if we are the LAST tween, don't adjust anything (since nothing will move anyways)
+            if (popupIndex == length - 1) {
+                growlPopups.remove(popupIndex);
+
+                if (tween != null) {
+                    tween.kill();
+                }
+                if (hideTween != null) {
+                    hideTween.kill();
+                }
+
+                // if there's nothing left, stop the timer.
+                if (copies.isEmpty()) {
+                    timer.stop();
+                }
+                return;
+            }
+
 
             int adjustedI = 0;
             for (int i = 0; i < length; i++) {
@@ -418,6 +437,7 @@ class GrowlPopup extends JFrame {
                 }
 
                 if (i != popupIndex) {
+                    // move the others into the correct position
                     int newPopupIndex = adjustedI++;
                     popup.popupIndex = newPopupIndex;
 
@@ -433,14 +453,15 @@ class GrowlPopup extends JFrame {
                     copies.add(popup);
 
                     // now animate that popup to it's new location
-                    Tween tween = Tween.to(popup, 1, accessor, MOVE_DURATION)
+                    Tween tween = Tween.to(popup, GrowlPopupAccessor.Y_POS, accessor, MOVE_DURATION)
                                        .target((float) changedY)
                                        .ease(TweenEquations.Linear);
 
                     tweenManager.add(tween);
                     popup.tween = tween;
-                } else {
-                    if (this.hideTween != null) {
+                }
+                else {
+                    if (hideTween != null) {
                         hideTween.kill();
                     }
                 }
@@ -452,6 +473,10 @@ class GrowlPopup extends JFrame {
             // if there's nothing left, stop the timer.
             if (copies.isEmpty()) {
                 timer.stop();
+            }
+            else if (!timer.isRunning()) {
+                tweenManager.resetUpdateTime();
+                timer.start();
             }
         }
     }
@@ -483,7 +508,7 @@ class GrowlPopup extends JFrame {
     void shake(final int durationInMillis, final int amplitude) {
         System.err.println("shake");
 
-        Tween tween = Tween.to(this, 2, accessor, 0.05F)
+        Tween tween = Tween.to(this, GrowlPopupAccessor.X_Y_POS, accessor, 0.05F)
                            .targetRelative(amplitude, amplitude)
                            .repeatAutoReverse(durationInMillis / 50, 0)
                            .ease(TweenEquations.Linear);

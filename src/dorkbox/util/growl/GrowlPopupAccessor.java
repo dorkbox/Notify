@@ -19,6 +19,11 @@ import dorkbox.util.tweenengine.TweenAccessor;
 
 class GrowlPopupAccessor implements TweenAccessor<GrowlPopup> {
 
+    static final int OPACITY = 0;
+    static final int Y_POS = 1;
+    static final int X_Y_POS = 2;
+
+
     GrowlPopupAccessor() {
     }
 
@@ -26,13 +31,13 @@ class GrowlPopupAccessor implements TweenAccessor<GrowlPopup> {
     public
     int getValues(final GrowlPopup target, final int tweenType, final float[] returnValues) {
         switch (tweenType) {
-            case 0:
+            case OPACITY:
                 returnValues[0] = target.getOpacity_Compat();
                 return 1;
-            case 1:
+            case Y_POS:
                 returnValues[0] = (float) target.getY();
                 return 1;
-            case 2:
+            case X_Y_POS:
                 returnValues[0] = (float) target.getX();
                 returnValues[1] = (float) target.getY();
                 return 2;
@@ -44,13 +49,14 @@ class GrowlPopupAccessor implements TweenAccessor<GrowlPopup> {
     public
     void setValues(final GrowlPopup target, final int tweenType, final float[] newValues) {
         switch (tweenType) {
-            case 0:
+            case OPACITY:
                 target.setOpacity_Compat(newValues[0]);
                 return;
-            case 1:
+            case Y_POS:
                 //noinspection NumericCastThatLosesPrecision
                 target.setY((int) newValues[0]);
-            case 2:
+                return;
+            case X_Y_POS:
                 //noinspection NumericCastThatLosesPrecision
                 target.setLocation((int) newValues[0], (int) newValues[1]);
         }

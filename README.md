@@ -20,6 +20,10 @@ Primary Features:
 
 - This is for cross-platform use, specifically - linux 32/64, mac 32/64, and windows 32/64. Java 6+
 
+```
+Growl.IMAGE_PATH    (type String, default value 'resources')
+ - Location of the dialog image resources. By default they must be in the 'resources' directory relative to the application
+```
 
 ![growl-light image](https://raw.githubusercontent.com/dorkbox/Growl/master/growl-light.png)
 

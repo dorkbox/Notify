@@ -4,9 +4,6 @@ import java.awt.Window;
 
 class WindowUtil_Java7plus implements WindowUtil {
 
-    String test = "asdasd";
-    static String basdasdasd = "asdasdasdasdasd";
-
     @Override
     public
     float getOpacity(final Window window) {

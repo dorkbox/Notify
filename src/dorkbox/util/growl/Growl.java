@@ -16,24 +16,25 @@
 package dorkbox.util.growl;
 
 import dorkbox.util.ActionHandler;
+import dorkbox.util.LocationResolver;
 import dorkbox.util.SwingUtil;
 
 import javax.imageio.ImageIO;
 import javax.swing.ImageIcon;
 import java.awt.Image;
 import java.awt.image.BufferedImage;
+import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
 
 /**
  * Popup notification messages, similar to the popular "Growl" notification system on macosx, that display in the corner of the monitor.
- * </p>
- * They can follow the mouse (if the screen is unspecified), and have a variety of features, such as "shaking" to draw attention,
- * animating upon movement (for collating w/ multiple in a single location), and automatically hiding after a set duration.
- * </p>
- * These notifications are for a single screen only, and cannot be anchored to an application.
- *
+ * </p> They can follow the mouse (if the screen is unspecified), and have a variety of features, such as "shaking" to draw attention,
+ * animating upon movement (for collating w/ multiple in a single location), and automatically hiding after a set duration. </p> These
+ * notifications are for a single screen only, and cannot be anchored to an application.
+ * <p>
  * <pre>
  * {@code
  * Growl.create()
@@ -50,25 +51,13 @@ class Growl {
 
     public static final int FOREVER = 0;
 
+    /**
+     * Location of the dialog image resources. By default they must be in the 'resources' directory relative to the application
+     */
+    public static String IMAGE_PATH = "resources";
+
     private static Map<String, BufferedImage> imageCache = new HashMap<String, BufferedImage>(4);
     private static Map<String, ImageIcon> imageIconCache = new HashMap<String, ImageIcon>(4);
-
-    String title;
-    String text;
-    Pos position = Pos.BOTTOM_RIGHT;
-
-    int hideAfterDurationInMillis = 5000;
-    boolean hideCloseButton;
-    boolean isDark = false;
-
-    int screenNumber = Short.MIN_VALUE;
-
-    private Image graphic;
-    private ActionHandler<Growl> onAction;
-    private GrowlPopup growlPopup;
-    private String name;
-    private int shakeDurationInMillis = 0;
-    private int shakeAmplitude = 0;
 
     /**
      * Builder pattern to create the growl notification.
@@ -77,6 +66,69 @@ class Growl {
     Growl create() {
         return new Growl();
     }
+
+    /**
+     * Permits one to override the default images for the dialogs. This is NOT thread safe, and must be performed BEFORE using the GROWL
+     * system.
+     * <p>
+     * The image names are as follows:
+     * <p>
+     * 'dialog-confirm.png' 'dialog-error.png' 'dialog-information.png' 'dialog-warning.png'
+     *
+     * @param imageName  the name of the image, either your own if you want want it cached, or one of the above.
+     * @param image  the BufferedImage that you want to cache.
+     */
+    public static
+    void setImagePath(String imageName, BufferedImage image) {
+        if (imageCache.containsKey(imageName)) {
+            throw new RuntimeException("Unable to set an image that already has been set. This action must be done as soon as possible.");
+        }
+
+        imageCache.put(imageName, image);
+    }
+
+    private static
+    BufferedImage getImage(String imageName) {
+        BufferedImage bufferedImage = imageCache.get(imageName);
+        InputStream resourceAsStream = null;
+        try {
+            if (bufferedImage == null) {
+                String name = IMAGE_PATH + File.separatorChar + imageName;
+
+                resourceAsStream = LocationResolver.getResourceAsStream(name);
+
+                bufferedImage = ImageIO.read(resourceAsStream);
+                imageCache.put(imageName, bufferedImage);
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            if (resourceAsStream != null) {
+                try {
+                    resourceAsStream.close();
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+            }
+        }
+
+        return bufferedImage;
+    }
+
+
+    String title;
+    String text;
+    Pos position = Pos.BOTTOM_RIGHT;
+    int hideAfterDurationInMillis = 5000;
+    boolean hideCloseButton;
+    boolean isDark = false;
+    int screenNumber = Short.MIN_VALUE;
+    private Image graphic;
+    private ActionHandler<Growl> onAction;
+    private GrowlPopup growlPopup;
+    private String name;
+    private int shakeDurationInMillis = 0;
+    private int shakeAmplitude = 0;
 
     private
     Growl() {
@@ -163,7 +215,7 @@ class Growl {
      */
     public
     void showWarning() {
-        name = "/dorkbox/util/growl/dialog-warning.png";
+        name = "dialog-warning.png";
         graphic(getImage(name));
         show();
     }
@@ -173,7 +225,7 @@ class Growl {
      */
     public
     void showInformation() {
-        name = "/dorkbox/util/growl/dialog-information.png";
+        name = "dialog-information.png";
         graphic(getImage(name));
         show();
     }
@@ -183,7 +235,7 @@ class Growl {
      */
     public
     void showError() {
-        name = "/dorkbox/util/growl/dialog-error.png";
+        name = "dialog-error.png";
         graphic(getImage(name));
         show();
     }
@@ -193,7 +245,7 @@ class Growl {
      */
     public
     void showConfirm() {
-        name = "/dorkbox/util/growl/dialog-confirm.png";
+        name = "dialog-confirm.png";
         graphic(getImage(name));
         show();
     }
@@ -282,7 +334,6 @@ class Growl {
         });
     }
 
-
     /**
      * Specifies which screen to display on. If <0, it will show on screen 0. If > max-screens, it will show on the last screen.
      */
@@ -299,21 +350,6 @@ class Growl {
     void onClose() {
         growlPopup = null;
         graphic = null;
-    }
-
-    private
-    BufferedImage getImage(String imageName) {
-        BufferedImage bufferedImage = imageCache.get(imageName);
-        try {
-            if (bufferedImage == null) {
-                bufferedImage = ImageIO.read(Growl.class.getResourceAsStream(imageName));
-                imageCache.put(imageName, bufferedImage);
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-
-        return bufferedImage;
     }
 }
 
