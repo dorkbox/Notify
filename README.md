@@ -3,7 +3,7 @@ Growl
 
 Cross platform notification popups, similar to "Growl" on OSX, "Toasts" on Windows, and Notifications on Ubuntu.
 
-This small library is displays notifications on any screen, in any corner.
+This small library is displays notifications on any screen, in any corner, using swing.
 
 Primary Features:
 
