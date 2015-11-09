@@ -18,6 +18,7 @@ package dorkbox.util.growl;
 import dorkbox.util.OS;
 import dorkbox.util.ScreenUtil;
 import dorkbox.util.SwingUtil;
+import dorkbox.util.SystemProps;
 import dorkbox.util.tweenengine.BaseTween;
 import dorkbox.util.tweenengine.Tween;
 import dorkbox.util.tweenengine.TweenCallback;
@@ -198,6 +199,12 @@ class GrowlPopup extends JFrame {
         contentPane.setLayout(new BorderLayout(10, 5));
         setContentPane(contentPane);
 
+
+        // closebutton is the 'x' button, but it is really just a font
+        Font closeButtonFont = SwingUtil.getFontFromProperty(SystemProps.growl_closeButtonFontName, "Source Code Pro", Font.BOLD, 12);
+        Font mainTextFont = SwingUtil.getFontFromProperty(SystemProps.growl_titleTextFontName, "Source Code Pro", Font.BOLD, 14);
+        Font titleTextFont = SwingUtil.getFontFromProperty(SystemProps.growl_mainTextFontName, "Source Code Pro", Font.BOLD, 16);
+
         // TITLE AND CLOSE BUTTON
         {
             Box box = new Box(BoxLayout.X_AXIS);
@@ -211,7 +218,7 @@ class GrowlPopup extends JFrame {
 
                 final JLabel titleLabel = new JLabel();
                 titleLabel.setForeground(titleText_FG);
-                titleLabel.setFont(SwingUtil.FONT_BOLD_16);
+                titleLabel.setFont(titleTextFont);
                 titleLabel.setText(notification.title);
 
                 textBox.add(titleLabel);
@@ -227,7 +234,7 @@ class GrowlPopup extends JFrame {
 
                     final JLabel closeButton = new JLabel();
                     closeButton.setForeground(closeX_FG);
-                    closeButton.setFont(SwingUtil.FONT_BOLD_12);
+                    closeButton.setFont(closeButtonFont);
                     closeButton.setText("x");
                     closeButton.setVerticalTextPosition(SwingConstants.TOP);
 
@@ -276,11 +283,11 @@ class GrowlPopup extends JFrame {
             }
             text.append("</html>");
 
-            JLabel helpLabel_1 = new JLabel();
-            helpLabel_1.setForeground(mainText_FG);
-            helpLabel_1.setFont(SwingUtil.FONT_BOLD_14);
-            helpLabel_1.setText(text.toString());
-            contentPane.add(helpLabel_1, BorderLayout.CENTER);
+            JLabel mainTextLabel = new JLabel();
+            mainTextLabel.setForeground(mainText_FG);
+            mainTextLabel.setFont(mainTextFont);
+            mainTextLabel.setText(text.toString());
+            contentPane.add(mainTextLabel, BorderLayout.CENTER);
         }
 
 
