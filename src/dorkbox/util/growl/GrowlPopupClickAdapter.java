@@ -28,6 +28,6 @@ class GrowlPopupClickAdapter extends MouseAdapter {
     public
     void mouseReleased(final MouseEvent e) {
         GrowlPopup source = (GrowlPopup) e.getSource();
-        source.onClick();
+        source.onClick(e.getX(), e.getY());
     }
 }

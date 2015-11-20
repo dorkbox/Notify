@@ -15,67 +15,68 @@
  */
 package dorkbox.util.growl;
 
+import dorkbox.util.ActionHandlerLong;
 import dorkbox.util.OS;
+import dorkbox.util.Property;
 import dorkbox.util.ScreenUtil;
 import dorkbox.util.SwingUtil;
-import dorkbox.util.SystemProps;
+import dorkbox.util.swing.SwingActiveRender;
 import dorkbox.util.tweenengine.BaseTween;
 import dorkbox.util.tweenengine.Tween;
 import dorkbox.util.tweenengine.TweenCallback;
 import dorkbox.util.tweenengine.TweenEquations;
 import dorkbox.util.tweenengine.TweenManager;
 
-import javax.swing.Box;
-import javax.swing.BoxLayout;
 import javax.swing.ImageIcon;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
-import javax.swing.JPanel;
-import javax.swing.SwingConstants;
-import javax.swing.Timer;
-import javax.swing.border.EmptyBorder;
 import java.awt.*;
-import java.awt.event.ActionEvent;
-import java.awt.event.ActionListener;
 import java.awt.event.MouseAdapter;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 
 // we can't use regular popup, because if we have no owner, it won't work!
 // instead, we just create a JFrame and use it to hold our content
-@SuppressWarnings("Duplicates")
+@SuppressWarnings({"Duplicates", "FieldCanBeLocal"})
 public
 class GrowlPopup extends JFrame {
 
-    private static final int padding = 40;
+    @Property
+    /** title font used by growl */
+    public static String TITLE_TEXT_FONT = "Source Code Pro BOLD 16";
 
-    public static final float FADE_DURATION = 1.5F;
+    @Property
+    /** main text font used by growl */
+    public static String MAIN_TEXT_FONT = "Source Code Pro BOLD 12";
+
+    @Property
+    /** How long we want it to take for the popups to relocate when one is closed */
     public static final float MOVE_DURATION = 1.0F;
+
+    private static final int padding = 40;
 
     private static final Map<String, ArrayList<GrowlPopup>> popups = new HashMap<String, ArrayList<GrowlPopup>>();
 
     private static final GrowlPopupAccessor accessor = new GrowlPopupAccessor();
     private static final TweenManager tweenManager = new TweenManager();
+    private static ActionHandlerLong frameStartHandler;
 
-    private static Timer timer;
     private static WindowUtil opacity_compat;
 
-
     static {
-        // this timer is on the EDT (this is not the java.util timer)
-        // 30 times a second
-        //noinspection Convert2Lambda
-        timer = new Timer(1000/30, new ActionListener() {
+        // this is for updating the tween engine during active-rendering
+        frameStartHandler = new ActionHandlerLong() {
             @Override
             public
-            void actionPerformed(final ActionEvent e) {
-                tweenManager.update();
+            void handle(final long deltaInNanos) {
+                GrowlPopup.tweenManager.update(deltaInNanos);
             }
-        });
-        timer.setRepeats(true);
+        };
 
         if (OS.javaVersion == 6) {
             opacity_compat = new WindowUtil_Java6();
@@ -85,8 +86,23 @@ class GrowlPopup extends JFrame {
     }
 
     private static final int WIDTH = 300;
-    private static final int HEIGHT = 90;
+    private static final int HEIGHT = 87;
+    private static final int PROGRESS_HEIGHT = HEIGHT - 1;
 
+    private static final Stroke stroke = new BasicStroke(2);
+    private static final int closeX = 282;
+    private static final int closeY = 2;
+
+    private static final int Y_1 = closeY + 5;
+    private static final int X_1 = closeX + 5;
+    private static final int Y_2 = closeY + 11;
+    private static final int X_2 = closeX + 11;
+
+    private final Color panel_BG;
+    private final Color titleText_FG;
+    private final Color mainText_FG;
+    private final Color closeX_FG;
+    private final Color progress_FG;
 
 
     private final int anchorX;
@@ -96,6 +112,7 @@ class GrowlPopup extends JFrame {
     private final MouseAdapter mouseListener;
 
     private final Growl notification;
+    private final ImageIcon imageIcon;
 
     // this is used in combination with position, so that we can track which screen and what position a popup is in
     private final String idAndPosition;
@@ -105,11 +122,21 @@ class GrowlPopup extends JFrame {
     private Tween tween = null;
     private Tween hideTween = null;
 
+    // for the progress bar. we directly draw this onscreen
+    // non-volatile because it's always accessed in the active render thread
+    private int progress = 0;
+
+    private final boolean showCloseButton;
+    private BufferedImage cachedImage;
+    private static final Random RANDOM = new Random();
+
+
 
     // this is on the swing EDT
     @SuppressWarnings("NumericCastThatLosesPrecision")
     GrowlPopup(Growl notification, Image image, ImageIcon imageIcon) {
         this.notification = notification;
+        this.imageIcon = imageIcon;
 
         windowListener = new GrowlPopupWindowAdapter();
         mouseListener = new GrowlPopupClickAdapter();
@@ -117,7 +144,9 @@ class GrowlPopup extends JFrame {
         setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
         setUndecorated(true);
         setOpacity_Compat(1.0F);
+        setAlwaysOnTop(false);
         setAlwaysOnTop(true);
+        setLayout(null);
 
         setSize(WIDTH, HEIGHT);
         setLocation(Short.MIN_VALUE, Short.MIN_VALUE);
@@ -136,26 +165,23 @@ class GrowlPopup extends JFrame {
         addMouseListener(mouseListener);
 
 
-        final Color text_BG;
-        final Color titleText_FG;
-        final Color mainText_FG;
-        final Color closeX_FG;
-
         if (notification.isDark) {
-            text_BG = Color.DARK_GRAY;
+            panel_BG = Color.DARK_GRAY;
             titleText_FG = Color.GRAY;
             mainText_FG = Color.LIGHT_GRAY;
             closeX_FG = Color.GRAY;
+            progress_FG = Color.gray;
         }
         else {
-            text_BG = Color.WHITE;
-            titleText_FG = Color.DARK_GRAY;
+            panel_BG = Color.WHITE;
+            titleText_FG = Color.GRAY.darker();
             mainText_FG = Color.GRAY;
             closeX_FG = Color.LIGHT_GRAY;
+            progress_FG = new Color(0x42A5F5);
         }
 
-        setBackground(text_BG);
-
+        setBackground(panel_BG);
+        showCloseButton = !notification.hideCloseButton;
 
         GraphicsDevice device;
         if (notification.screenNumber == Short.MIN_VALUE) {
@@ -191,105 +217,6 @@ class GrowlPopup extends JFrame {
         final int startY = (int) screenBounds.getY();
         final int screenWidth = (int) screenBounds.getWidth();
         final int screenHeight = (int) screenBounds.getHeight();
-
-        // makes sure everything is spaced nicely
-        final JPanel contentPane = new JPanel();
-        contentPane.setBackground(text_BG);
-        contentPane.setBorder(new EmptyBorder(0, 10, 10, 5));
-        contentPane.setLayout(new BorderLayout(10, 5));
-        setContentPane(contentPane);
-
-
-        // closebutton is the 'x' button, but it is really just a font
-        Font closeButtonFont = SwingUtil.getFontFromProperty(SystemProps.growl_closeButtonFontName, "Source Code Pro", Font.BOLD, 12);
-        Font mainTextFont = SwingUtil.getFontFromProperty(SystemProps.growl_titleTextFontName, "Source Code Pro", Font.BOLD, 14);
-        Font titleTextFont = SwingUtil.getFontFromProperty(SystemProps.growl_mainTextFontName, "Source Code Pro", Font.BOLD, 16);
-
-        // TITLE AND CLOSE BUTTON
-        {
-            Box box = new Box(BoxLayout.X_AXIS);
-            box.setBackground(text_BG);
-
-            box.setAlignmentX(Component.CENTER_ALIGNMENT);
-
-            {
-                Box textBox = new Box(BoxLayout.X_AXIS);
-                textBox.setAlignmentX(Component.LEFT_ALIGNMENT);
-
-                final JLabel titleLabel = new JLabel();
-                titleLabel.setForeground(titleText_FG);
-                titleLabel.setFont(titleTextFont);
-                titleLabel.setText(notification.title);
-
-                textBox.add(titleLabel);
-                textBox.add(Box.createHorizontalGlue());
-
-                box.add(textBox);
-
-                if (!notification.hideCloseButton) {
-                    // can specify to hide the close button
-                    Box closeBox = new Box(BoxLayout.X_AXIS);
-                    closeBox.setBorder(new EmptyBorder(4, 4, 4, 4));
-                    closeBox.setAlignmentX(Component.RIGHT_ALIGNMENT);
-
-                    final JLabel closeButton = new JLabel();
-                    closeButton.setForeground(closeX_FG);
-                    closeButton.setFont(closeButtonFont);
-                    closeButton.setText("x");
-                    closeButton.setVerticalTextPosition(SwingConstants.TOP);
-
-                    closeBox.addMouseListener(new GrowlCloseAdapter(this));
-                    closeBox.add(closeButton);
-
-                    box.add(closeBox);
-                }
-            }
-
-            contentPane.add(box, BorderLayout.NORTH);
-        }
-
-
-        int textLengthLimit = 98;
-
-        // ICON
-        if (imageIcon != null) {
-            textLengthLimit = 76;
-            JLabel iconLabel = new JLabel(imageIcon);
-            contentPane.add(iconLabel, BorderLayout.WEST);
-        }
-
-        // MAIN TEXT
-        {
-            String notText = notification.text;
-            int length = notText.length();
-            StringBuilder text = new StringBuilder(length);
-
-            // are we "html" already? just check for the starting tag and strip off END html tag
-            if (length >= 13 && notText.regionMatches(true, length-7, "</html>", 0, 7)) {
-                text.append(notText);
-                text.delete(text.length() - 7, text.length());
-
-                length -= 7;
-            }
-            else {
-                text.append("<html>");
-                text.append(notText);
-            }
-
-            // make sure the text is the correct length
-            if (length > textLengthLimit) {
-                text.delete(6 + textLengthLimit, text.length());
-                text.append("...");
-            }
-            text.append("</html>");
-
-            JLabel mainTextLabel = new JLabel();
-            mainTextLabel.setForeground(mainText_FG);
-            mainTextLabel.setFont(mainTextFont);
-            mainTextLabel.setText(text.toString());
-            contentPane.add(mainTextLabel, BorderLayout.CENTER);
-        }
-
 
 
         // determine location for the popup
@@ -336,9 +263,156 @@ class GrowlPopup extends JFrame {
         }
     }
 
-    public void close() {
-        removePopupFromMap();
+    @Override
+    public
+    void paint(Graphics g) {
+        // we cache the text + image (to another image), and then always render the close + progressbar
+        int width = getWidth();
+        int height = getHeight();
 
+        if (width <= 0 || height <= 0) {
+            return;
+        }
+        if (cachedImage == null) {
+            cachedImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
+
+            Graphics g2 = cachedImage.createGraphics();
+            try {
+                g2.setColor(panel_BG);
+                g2.fillRect(0, 0, WIDTH, HEIGHT);
+
+                // Draw the title text
+                Font titleTextFont = SwingUtil.parseFont(TITLE_TEXT_FONT);
+                g2.setColor(titleText_FG);
+                g2.setFont(titleTextFont);
+                g2.drawString(notification.title, 5, 20);
+
+
+
+                int posX = 10;
+                int textLengthLimit = 108;
+
+                // ICON
+                if (imageIcon != null) {
+                    textLengthLimit = 88;
+                    posX = 60;
+                    // Draw the image
+                    imageIcon.paintIcon(this, g2, 5, 30);
+                }
+
+                // Draw the main text
+                Font mainTextFont = SwingUtil.parseFont(MAIN_TEXT_FONT);
+                String notText = notification.text;
+                int length = notText.length();
+                StringBuilder text = new StringBuilder(length);
+
+                // are we "html" already? just check for the starting tag and strip off END html tag
+                if (length >= 13 && notText.regionMatches(true, length-7, "</html>", 0, 7)) {
+                    text.append(notText);
+                    text.delete(text.length() - 7, text.length());
+
+                    length -= 7;
+                }
+                else {
+                    text.append("<html>");
+                    text.append(notText);
+                }
+
+                // make sure the text is the correct length
+                if (length > textLengthLimit) {
+                    text.delete(6 + textLengthLimit, text.length());
+                    text.append("...");
+                }
+                text.append("</html>");
+
+                JLabel mainTextLabel = new JLabel();
+                mainTextLabel.setForeground(mainText_FG);
+                mainTextLabel.setFont(mainTextFont);
+                mainTextLabel.setText(text.toString());
+
+                int posY = -8;
+                mainTextLabel.setBounds(0, 0, WIDTH - posX - 2, HEIGHT);
+
+                g2.translate(posX, posY);
+                mainTextLabel.paint(g2);
+                g2.translate(-posX, -posY);
+            } finally {
+                g2.dispose();
+            }
+
+            g.drawImage(cachedImage, 0, 0, null);
+        }
+        else {
+            // use our cached image, so we don't have to re-render text
+            g.drawImage(cachedImage, getX(), getY(), null);
+
+            // the progress bar and close button are the only things that can change, so we always draw them
+            Graphics2D g2 = (Graphics2D) g.create();
+            try {
+                if (showCloseButton) {
+                    Graphics2D g3 = (Graphics2D) g.create();
+
+                    g3.setColor(panel_BG);
+                    g3.setStroke(stroke);
+
+                    final Point p = getMousePosition();
+                    // reasonable position for detecting mouse over
+                    if (p != null && p.getX() >= 280 && p.getY() <= 20) {
+                        g3.setColor(Color.RED);
+                    } else {
+                        g3.setColor(closeX_FG);
+                    }
+
+                    // draw the X
+                    g3.drawLine(X_1, Y_1, X_2, Y_2);
+                    g3.drawLine(X_2, Y_1, X_1, Y_2);
+                }
+
+                g2.setColor(progress_FG);
+                g2.fillRect(0, PROGRESS_HEIGHT, progress, 1);
+            } finally {
+                g2.dispose();
+            }
+        }
+    }
+
+    public
+    void onClick(final int x, final int y) {
+        // Check - we were over the 'X' (and thus no notify), or was it in the general area?
+
+        if (showCloseButton && x >= 280 && y <= 20) {
+            // reasonable position for detecting mouse over
+            close();
+        }
+        else {
+            notification.onClick();
+            close();
+        }
+    }
+
+    @Override
+    public
+    void setVisible(final boolean b) {
+        // necessary for active rendering
+        setIgnoreRepaint(true);
+
+        super.setVisible(b);
+
+        if (b) {
+            toFront();
+
+            // set this jframe to use active rendering
+            SwingActiveRender.addActiveRender(this);
+            addPopupToMap();
+        }
+        else {
+            removePopupFromMap();
+            SwingActiveRender.removeActiveRender(this);
+        }
+    }
+
+
+    public void close() {
         WindowEvent winClosingEvent = new WindowEvent(this, WindowEvent.WINDOW_CLOSING);
         Toolkit.getDefaultToolkit().getSystemEventQueue().postEvent(winClosingEvent);
 
@@ -383,9 +457,11 @@ class GrowlPopup extends JFrame {
 
             if (notification.hideAfterDurationInMillis > 0 && hideTween == null) {
                 // begin a timeline to get rid of the popup (default is 5 seconds)
-                hideTween = Tween.set(this, GrowlPopupAccessor.OPACITY, accessor)
-                                 .delay(FADE_DURATION + (notification.hideAfterDurationInMillis / 1000.0F))
-                                 .target(0)
+                final float durationInSeconds = notification.hideAfterDurationInMillis / 1000.0F;
+
+                hideTween = Tween.to(this, GrowlPopupAccessor.PROGRESS, accessor, durationInSeconds)
+                                 .target(WIDTH)
+                                 .ease(TweenEquations.Linear)
                                  .addCallback(new TweenCallback() {
                                      @Override
                                      public
@@ -395,8 +471,9 @@ class GrowlPopup extends JFrame {
                                  });
                 tweenManager.add(hideTween);
 
-                if (!timer.isRunning()) {
-                    timer.start();
+                if (!SwingActiveRender.containsActiveRenderFrameStart(frameStartHandler)) {
+                    tweenManager.resetUpdateTime();
+                    SwingActiveRender.addActiveRenderFrameStart(frameStartHandler);
                 }
             }
         }
@@ -428,8 +505,8 @@ class GrowlPopup extends JFrame {
                 }
 
                 // if there's nothing left, stop the timer.
-                if (copies.isEmpty()) {
-                    timer.stop();
+                if (popups.isEmpty()) {
+                    SwingActiveRender.removeActiveRenderFrameStart(frameStartHandler);
                 }
                 return;
             }
@@ -478,12 +555,9 @@ class GrowlPopup extends JFrame {
             popups.put(idAndPosition, copies);
 
             // if there's nothing left, stop the timer.
-            if (copies.isEmpty()) {
-                timer.stop();
-            }
-            else if (!timer.isRunning()) {
+            if (!SwingActiveRender.containsActiveRenderFrameStart(frameStartHandler)) {
                 tweenManager.resetUpdateTime();
-                timer.start();
+                SwingActiveRender.addActiveRenderFrameStart(frameStartHandler);
             }
         }
     }
@@ -505,19 +579,45 @@ class GrowlPopup extends JFrame {
         setLocation(getX(), newY);
     }
 
-    public
-    void onClick() {
-        notification.onClick();
-        close();
-    }
 
+    /**
+     * Shakes the popup
+     *
+     * @param durationInMillis now long it will shake
+     * @param amplitude a measure of how much it needs to shake. 4 is a small amount of shaking, 10 is a lot.
+     */
     public
     void shake(final int durationInMillis, final int amplitude) {
-        System.err.println("shake");
+        int i1 = RANDOM.nextInt((amplitude << 2) + 1) - amplitude;
+        int i2 = RANDOM.nextInt((amplitude << 2) + 1) - amplitude;
+
+        i1 = i1 >> 2;
+        i2 = i2 >> 2;
+
+        // make sure it always moves by some amount
+        if (i1 < 0) {
+            i1 -= amplitude >> 2;
+        }
+        else {
+            i1 += amplitude >> 2;
+        }
+
+        if (i2 < 0) {
+            i2 -= amplitude >> 2;
+        }
+        else {
+            i2 += amplitude >> 2;
+        }
+
+        int count = durationInMillis / 50;
+        // make sure we always end the animation where we start
+        if ((count & 1) == 0) {
+            count++;
+        }
 
         Tween tween = Tween.to(this, GrowlPopupAccessor.X_Y_POS, accessor, 0.05F)
-                           .targetRelative(amplitude, amplitude)
-                           .repeatAutoReverse(durationInMillis / 50, 0)
+                           .targetRelative(i1, i2)
+                           .repeatAutoReverse(count, 0)
                            .ease(TweenEquations.Linear);
         tweenManager.add(tween);
     }
@@ -530,5 +630,15 @@ class GrowlPopup extends JFrame {
     public
     float getOpacity_Compat() {
         return opacity_compat.getOpacity(this);
+    }
+
+    public
+    int getProgress() {
+        return progress;
+    }
+
+    public
+    void setProgress(final int progress) {
+        this.progress = progress;
     }
 }

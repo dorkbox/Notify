@@ -49,8 +49,6 @@ import java.util.Map;
 public final
 class Growl {
 
-    public static final int FOREVER = 0;
-
     /**
      * Location of the dialog image resources. By default they must be in the 'resources' directory relative to the application
      */
@@ -119,7 +117,7 @@ class Growl {
     String title;
     String text;
     Pos position = Pos.BOTTOM_RIGHT;
-    int hideAfterDurationInMillis = 5000;
+    int hideAfterDurationInMillis = 0;
     boolean hideCloseButton;
     boolean isDark = false;
     int screenNumber = Short.MIN_VALUE;
@@ -171,7 +169,8 @@ class Growl {
     }
 
     /**
-     * Specifies the duration that the notification should show, after which it will be hidden. 0 means to show forever.
+     * Specifies the duration that the notification should show, after which it will be hidden. 0 means to show forever. By default it
+     * will show forever
      */
     public
     Growl hideAfter(int durationInMillis) {
@@ -294,10 +293,13 @@ class Growl {
     }
 
     /**
-     * "shakes" the notification, to bring user attention
+     * "shakes" the notification, to bring user attention to it.
+     *
+     * @param durationInMillis now long it will shake
+     * @param amplitude a measure of how much it needs to shake. 4 is a small amount of shaking, 10 is a lot.
      */
     public
-    void shake(final int durationInMillis, final int amplitude) {
+    Growl shake(final int durationInMillis, final int amplitude) {
         this.shakeDurationInMillis = durationInMillis;
         this.shakeAmplitude = amplitude;
 
@@ -312,6 +314,8 @@ class Growl {
                 }
             });
         }
+
+        return this;
     }
 
     /**

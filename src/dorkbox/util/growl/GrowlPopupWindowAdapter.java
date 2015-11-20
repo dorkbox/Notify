@@ -20,8 +20,14 @@ import java.awt.event.WindowEvent;
 
 class GrowlPopupWindowAdapter extends WindowAdapter {
     public
-    void windowOpened(WindowEvent e) {
-        GrowlPopup source = (GrowlPopup) e.getSource();
-        source.addPopupToMap();
+    void windowLostFocus(WindowEvent e) {
+        if (e.getNewState() != WindowEvent.WINDOW_CLOSED) {
+            GrowlPopup source = (GrowlPopup) e.getSource();
+            //toFront();
+            //requestFocus();
+            source.setAlwaysOnTop(false);
+            source.setAlwaysOnTop(true);
+            //requestFocusInWindow();
+        }
     }
 }

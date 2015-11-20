@@ -22,6 +22,7 @@ class GrowlPopupAccessor implements TweenAccessor<GrowlPopup> {
     static final int OPACITY = 0;
     static final int Y_POS = 1;
     static final int X_Y_POS = 2;
+    static final int PROGRESS = 3;
 
 
     GrowlPopupAccessor() {
@@ -41,10 +42,14 @@ class GrowlPopupAccessor implements TweenAccessor<GrowlPopup> {
                 returnValues[0] = (float) target.getX();
                 returnValues[1] = (float) target.getY();
                 return 2;
+            case PROGRESS:
+                returnValues[0] = (float) target.getProgress();
+                return 1;
         }
         return 1;
     }
 
+    @SuppressWarnings({"NumericCastThatLosesPrecision", "UnnecessaryReturnStatement"})
     @Override
     public
     void setValues(final GrowlPopup target, final int tweenType, final float[] newValues) {
@@ -53,12 +58,14 @@ class GrowlPopupAccessor implements TweenAccessor<GrowlPopup> {
                 target.setOpacity_Compat(newValues[0]);
                 return;
             case Y_POS:
-                //noinspection NumericCastThatLosesPrecision
                 target.setY((int) newValues[0]);
                 return;
             case X_Y_POS:
-                //noinspection NumericCastThatLosesPrecision
                 target.setLocation((int) newValues[0], (int) newValues[1]);
+                return;
+            case PROGRESS:
+                target.setProgress((int) newValues[0]);
+                return;
         }
     }
 }
