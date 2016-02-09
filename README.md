@@ -40,3 +40,7 @@ Growl.IMAGE_PATH    (type String, default value 'resources')
 
 ![growl-dark image](https://raw.githubusercontent.com/dorkbox/Growl/master/growl-dark.png)
 
+
+<h2>License</h2>
+
+This project is distributed under the terms of the Apache v2.0 License. See file "LICENSE" for further references.
