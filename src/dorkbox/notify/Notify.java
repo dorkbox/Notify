@@ -61,7 +61,7 @@ class Notify {
      */
     public static
     String getVersion() {
-        return "1.1";
+        return "1.2";
     }
 
     /**
@@ -363,4 +363,6 @@ class Notify {
         graphic = null;
     }
 }
+
+
 
