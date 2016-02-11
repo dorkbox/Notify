@@ -31,15 +31,17 @@ import java.util.Map;
 
 /**
  * Popup notification messages, similar to the popular "Growl" notification system on macosx, that display in the corner of the monitor.
- * </p> They can follow the mouse (if the screen is unspecified), and have a variety of features, such as "shaking" to draw attention,
- * animating upon movement (for collating w/ multiple in a single location), and automatically hiding after a set duration. </p> These
- * notifications are for a single screen only, and cannot be anchored to an application.
- * <p>
+ * </p>
+ * They can follow the mouse (if the screen is unspecified), and have a variety of features, such as "shaking" to draw attention,
+ * animating upon movement (for collating w/ multiple in a single location), and automatically hiding after a set duration.
+ * </p>
+ * These notifications are for a single screen only, and cannot be anchored to an application.
+ *
  * <pre>
  * {@code
  * Notify.create()
  *      .title("Title Text")
- *      .text("Hello World 0!")
+ *      .text("Hello World!")
  *      .useDarkStyle()
  *      .showWarning();
  * }
@@ -61,7 +63,7 @@ class Notify {
      */
     public static
     String getVersion() {
-        return "1.2";
+        return "2.0";
     }
 
     /**
@@ -363,6 +365,10 @@ class Notify {
         graphic = null;
     }
 }
+
+
+
+
 
 
 
