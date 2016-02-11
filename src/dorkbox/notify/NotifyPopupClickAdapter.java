@@ -13,21 +13,21 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package dorkbox.util.growl;
+package dorkbox.notify;
 
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 
-class GrowlPopupClickAdapter extends MouseAdapter {
+class NotifyPopupClickAdapter extends MouseAdapter {
 
     public
-    GrowlPopupClickAdapter() {
+    NotifyPopupClickAdapter() {
     }
 
     @Override
     public
     void mouseReleased(final MouseEvent e) {
-        GrowlPopup source = (GrowlPopup) e.getSource();
+        NotifyPopup source = (NotifyPopup) e.getSource();
         source.onClick(e.getX(), e.getY());
     }
 }

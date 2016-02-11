@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package dorkbox.util.growl;
+package dorkbox.notify;
 
 import dorkbox.util.ActionHandlerLong;
 import dorkbox.util.OS;
@@ -21,11 +21,11 @@ import dorkbox.util.Property;
 import dorkbox.util.ScreenUtil;
 import dorkbox.util.SwingUtil;
 import dorkbox.util.swing.SwingActiveRender;
-import dorkbox.util.tweenengine.BaseTween;
-import dorkbox.util.tweenengine.Tween;
-import dorkbox.util.tweenengine.TweenCallback;
-import dorkbox.util.tweenengine.TweenEquations;
-import dorkbox.util.tweenengine.TweenManager;
+import dorkbox.tweenengine.BaseTween;
+import dorkbox.tweenengine.Tween;
+import dorkbox.tweenengine.TweenCallback;
+import dorkbox.tweenengine.TweenEquations;
+import dorkbox.tweenengine.TweenManager;
 
 import javax.swing.ImageIcon;
 import javax.swing.JFrame;
@@ -44,14 +44,15 @@ import java.util.Random;
 // instead, we just create a JFrame and use it to hold our content
 @SuppressWarnings({"Duplicates", "FieldCanBeLocal"})
 public
-class GrowlPopup extends JFrame {
+class NotifyPopup extends JFrame {
+    private static final long serialVersionUID = 1L;
 
     @Property
-    /** title font used by growl */
+    /** title font used by Notify */
     public static String TITLE_TEXT_FONT = "Source Code Pro BOLD 16";
 
     @Property
-    /** main text font used by growl */
+    /** main text font used by Notify */
     public static String MAIN_TEXT_FONT = "Source Code Pro BOLD 12";
 
     @Property
@@ -60,9 +61,9 @@ class GrowlPopup extends JFrame {
 
     private static final int padding = 40;
 
-    private static final Map<String, ArrayList<GrowlPopup>> popups = new HashMap<String, ArrayList<GrowlPopup>>();
+    private static final Map<String, ArrayList<NotifyPopup>> popups = new HashMap<String, ArrayList<NotifyPopup>>();
 
-    private static final GrowlPopupAccessor accessor = new GrowlPopupAccessor();
+    private static final NotifyPopupAccessor accessor = new NotifyPopupAccessor();
     private static final TweenManager tweenManager = new TweenManager();
     private static ActionHandlerLong frameStartHandler;
 
@@ -74,7 +75,7 @@ class GrowlPopup extends JFrame {
             @Override
             public
             void handle(final long deltaInNanos) {
-                GrowlPopup.tweenManager.update(deltaInNanos);
+                NotifyPopup.tweenManager.update(deltaInNanos);
             }
         };
 
@@ -111,7 +112,7 @@ class GrowlPopup extends JFrame {
     private final WindowAdapter windowListener;
     private final MouseAdapter mouseListener;
 
-    private final Growl notification;
+    private final Notify notification;
     private final ImageIcon imageIcon;
 
     // this is used in combination with position, so that we can track which screen and what position a popup is in
@@ -134,12 +135,12 @@ class GrowlPopup extends JFrame {
 
     // this is on the swing EDT
     @SuppressWarnings("NumericCastThatLosesPrecision")
-    GrowlPopup(Growl notification, Image image, ImageIcon imageIcon) {
+    NotifyPopup(Notify notification, Image image, ImageIcon imageIcon) {
         this.notification = notification;
         this.imageIcon = imageIcon;
 
-        windowListener = new GrowlPopupWindowAdapter();
-        mouseListener = new GrowlPopupClickAdapter();
+        windowListener = new NotifyPopupWindowAdapter();
+        mouseListener = new NotifyPopupClickAdapter();
 
         setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
         setUndecorated(true);
@@ -433,12 +434,12 @@ class GrowlPopup extends JFrame {
         Pos position = notification.position;
 
         synchronized (popups) {
-            ArrayList<GrowlPopup> growlPopups = popups.get(idAndPosition);
-            if (growlPopups == null) {
-                growlPopups = new ArrayList<GrowlPopup>(4);
-                popups.put(idAndPosition, growlPopups);
+            ArrayList<NotifyPopup> notifyPopups = popups.get(idAndPosition);
+            if (notifyPopups == null) {
+                notifyPopups = new ArrayList<NotifyPopup>(4);
+                popups.put(idAndPosition, notifyPopups);
             }
-            final int popupIndex = growlPopups.size();
+            final int popupIndex = notifyPopups.size();
             this.popupIndex = popupIndex;
 
             // the popups are ALL the same size!
@@ -452,14 +453,14 @@ class GrowlPopup extends JFrame {
                 targetY = anchorY - (popupIndex * (HEIGHT + 10));
             }
 
-            growlPopups.add(this);
+            notifyPopups.add(this);
             setLocation(anchorX, targetY);
 
             if (notification.hideAfterDurationInMillis > 0 && hideTween == null) {
                 // begin a timeline to get rid of the popup (default is 5 seconds)
                 final float durationInSeconds = notification.hideAfterDurationInMillis / 1000.0F;
 
-                hideTween = Tween.to(this, GrowlPopupAccessor.PROGRESS, accessor, durationInSeconds)
+                hideTween = Tween.to(this, NotifyPopupAccessor.PROGRESS, accessor, durationInSeconds)
                                  .target(WIDTH)
                                  .ease(TweenEquations.Linear)
                                  .addCallback(new TweenCallback() {
@@ -488,14 +489,14 @@ class GrowlPopup extends JFrame {
 
         synchronized (popups) {
             final int popupIndex = this.popupIndex;
-            final ArrayList<GrowlPopup> growlPopups = popups.get(idAndPosition);
-            int length = growlPopups.size();
+            final ArrayList<NotifyPopup> notifyPopups = popups.get(idAndPosition);
+            int length = notifyPopups.size();
 
-            final ArrayList<GrowlPopup> copies = new ArrayList<GrowlPopup>(length);
+            final ArrayList<NotifyPopup> copies = new ArrayList<NotifyPopup>(length);
 
             // if we are the LAST tween, don't adjust anything (since nothing will move anyways)
             if (popupIndex == length - 1) {
-                growlPopups.remove(popupIndex);
+                notifyPopups.remove(popupIndex);
 
                 if (tween != null) {
                     tween.kill();
@@ -514,7 +515,7 @@ class GrowlPopup extends JFrame {
 
             int adjustedI = 0;
             for (int i = 0; i < length; i++) {
-                final GrowlPopup popup = growlPopups.get(i);
+                final NotifyPopup popup = notifyPopups.get(i);
 
                 if (popup.tween != null) {
                     popup.tween.kill();
@@ -537,7 +538,7 @@ class GrowlPopup extends JFrame {
                     copies.add(popup);
 
                     // now animate that popup to it's new location
-                    Tween tween = Tween.to(popup, GrowlPopupAccessor.Y_POS, accessor, MOVE_DURATION)
+                    Tween tween = Tween.to(popup, NotifyPopupAccessor.Y_POS, accessor, MOVE_DURATION)
                                        .target((float) changedY)
                                        .ease(TweenEquations.Linear);
 
@@ -551,7 +552,7 @@ class GrowlPopup extends JFrame {
                 }
             }
 
-            growlPopups.clear();
+            notifyPopups.clear();
             popups.put(idAndPosition, copies);
 
             // if there's nothing left, stop the timer.
@@ -615,7 +616,7 @@ class GrowlPopup extends JFrame {
             count++;
         }
 
-        Tween tween = Tween.to(this, GrowlPopupAccessor.X_Y_POS, accessor, 0.05F)
+        Tween tween = Tween.to(this, NotifyPopupAccessor.X_Y_POS, accessor, 0.05F)
                            .targetRelative(i1, i2)
                            .repeatAutoReverse(count, 0)
                            .ease(TweenEquations.Linear);

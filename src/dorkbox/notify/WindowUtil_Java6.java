@@ -1,4 +1,4 @@
-package dorkbox.util.growl;
+package dorkbox.notify;
 
 import com.sun.awt.AWTUtilities;
 

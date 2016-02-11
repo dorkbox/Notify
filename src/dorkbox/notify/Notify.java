@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package dorkbox.util.growl;
+package dorkbox.notify;
 
 import dorkbox.util.ActionHandler;
 import dorkbox.util.LocationResolver;
@@ -37,7 +37,7 @@ import java.util.Map;
  * <p>
  * <pre>
  * {@code
- * Growl.create()
+ * Notify.create()
  *      .title("Title Text")
  *      .text("Hello World 0!")
  *      .useDarkStyle()
@@ -45,9 +45,8 @@ import java.util.Map;
  * }
  * </pre>
  */
-@SuppressWarnings("unused")
 public final
-class Growl {
+class Notify {
 
     /**
      * Location of the dialog image resources. By default they must be in the 'resources' directory relative to the application
@@ -58,11 +57,19 @@ class Growl {
     private static Map<String, ImageIcon> imageIconCache = new HashMap<String, ImageIcon>(4);
 
     /**
+     * Gets the version number.
+     */
+    public static
+    String getVersion() {
+        return "1.1";
+    }
+
+    /**
      * Builder pattern to create the growl notification.
      */
     public static
-    Growl create() {
-        return new Growl();
+    Notify create() {
+        return new Notify();
     }
 
     /**
@@ -122,21 +129,21 @@ class Growl {
     boolean isDark = false;
     int screenNumber = Short.MIN_VALUE;
     private Image graphic;
-    private ActionHandler<Growl> onAction;
-    private GrowlPopup growlPopup;
+    private ActionHandler<Notify> onAction;
+    private NotifyPopup notifyPopup;
     private String name;
     private int shakeDurationInMillis = 0;
     private int shakeAmplitude = 0;
 
     private
-    Growl() {
+    Notify() {
     }
 
     /**
      * Specifies the main text
      */
     public
-    Growl text(String text) {
+    Notify text(String text) {
         this.text = text;
         return this;
     }
@@ -145,7 +152,7 @@ class Growl {
      * Specifies the title
      */
     public
-    Growl title(String title) {
+    Notify title(String title) {
         this.title = title;
         return this;
     }
@@ -154,7 +161,7 @@ class Growl {
      * Specifies the graphic
      */
     public
-    Growl graphic(Image graphic) {
+    Notify graphic(Image graphic) {
         this.graphic = graphic;
         return this;
     }
@@ -163,7 +170,7 @@ class Growl {
      * Specifies the position of the notification on screen, by default it is {@link Pos#BOTTOM_RIGHT bottom-right}.
      */
     public
-    Growl position(Pos position) {
+    Notify position(Pos position) {
         this.position = position;
         return this;
     }
@@ -173,7 +180,7 @@ class Growl {
      * will show forever
      */
     public
-    Growl hideAfter(int durationInMillis) {
+    Notify hideAfter(int durationInMillis) {
         if (durationInMillis < 0) {
             durationInMillis = 0;
         }
@@ -186,7 +193,7 @@ class Growl {
      * notification is clicked on). This does not apply when clicking on the "close" button
      */
     public
-    Growl onAction(ActionHandler<Growl> onAction) {
+    Notify onAction(ActionHandler<Notify> onAction) {
         this.onAction = onAction;
         return this;
     }
@@ -195,7 +202,7 @@ class Growl {
      * Specifies that the notification should use the built-in dark styling, rather than the default, light-gray notification style.
      */
     public
-    Growl darkStyle() {
+    Notify darkStyle() {
         isDark = true;
         return this;
     }
@@ -204,7 +211,7 @@ class Growl {
      * Specify that the close button in the top-right corner of the notification should not be shown.
      */
     public
-    Growl hideCloseButton() {
+    Notify hideCloseButton() {
         this.hideCloseButton = true;
         return this;
     }
@@ -260,11 +267,11 @@ class Growl {
             @Override
             public
             void run() {
-                final Growl growl = Growl.this;
-                final Image graphic = growl.graphic;
+                final Notify notify = Notify.this;
+                final Image graphic = notify.graphic;
 
                 if (graphic == null) {
-                    growlPopup = new GrowlPopup(growl, null, null);
+                    notifyPopup = new NotifyPopup(notify, null, null);
                 }
                 else {
                     // we ONLY cache our own icons
@@ -280,13 +287,13 @@ class Growl {
                         imageIcon = new ImageIcon(graphic);
                     }
 
-                    growlPopup = new GrowlPopup(growl, graphic, imageIcon);
+                    notifyPopup = new NotifyPopup(notify, graphic, imageIcon);
                 }
 
-                growlPopup.setVisible(true);
+                notifyPopup.setVisible(true);
 
                 if (shakeDurationInMillis > 0) {
-                    growlPopup.shake(growl.shakeDurationInMillis, growl.shakeAmplitude);
+                    notifyPopup.shake(notify.shakeDurationInMillis, notify.shakeAmplitude);
                 }
             }
         });
@@ -299,18 +306,18 @@ class Growl {
      * @param amplitude a measure of how much it needs to shake. 4 is a small amount of shaking, 10 is a lot.
      */
     public
-    Growl shake(final int durationInMillis, final int amplitude) {
+    Notify shake(final int durationInMillis, final int amplitude) {
         this.shakeDurationInMillis = durationInMillis;
         this.shakeAmplitude = amplitude;
 
-        if (growlPopup != null) {
+        if (notifyPopup != null) {
             // must be done in the swing EDT
             //noinspection Convert2Lambda
             SwingUtil.invokeLater(new Runnable() {
                 @Override
                 public
                 void run() {
-                    growlPopup.shake(durationInMillis, amplitude);
+                    notifyPopup.shake(durationInMillis, amplitude);
                 }
             });
         }
@@ -323,8 +330,8 @@ class Growl {
      */
     public
     void close() {
-        if (growlPopup == null) {
-            throw new NullPointerException("GrowlPopup");
+        if (notifyPopup == null) {
+            throw new NullPointerException("NotifyPopup");
         }
 
         // must be done in the swing EDT
@@ -333,7 +340,7 @@ class Growl {
             @Override
             public
             void run() {
-                growlPopup.close();
+                notifyPopup.close();
             }
         });
     }
@@ -342,7 +349,7 @@ class Growl {
      * Specifies which screen to display on. If <0, it will show on screen 0. If > max-screens, it will show on the last screen.
      */
     public
-    Growl setScreen(final int screenNumber) {
+    Notify setScreen(final int screenNumber) {
         this.screenNumber = screenNumber;
         return this;
     }
@@ -352,7 +359,7 @@ class Growl {
     }
 
     void onClose() {
-        growlPopup = null;
+        notifyPopup = null;
         graphic = null;
     }
 }

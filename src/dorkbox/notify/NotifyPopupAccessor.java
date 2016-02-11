@@ -13,11 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package dorkbox.util.growl;
+package dorkbox.notify;
 
-import dorkbox.util.tweenengine.TweenAccessor;
+import dorkbox.tweenengine.TweenAccessor;
 
-class GrowlPopupAccessor implements TweenAccessor<GrowlPopup> {
+class NotifyPopupAccessor implements TweenAccessor<NotifyPopup> {
 
     static final int OPACITY = 0;
     static final int Y_POS = 1;
@@ -25,12 +25,12 @@ class GrowlPopupAccessor implements TweenAccessor<GrowlPopup> {
     static final int PROGRESS = 3;
 
 
-    GrowlPopupAccessor() {
+    NotifyPopupAccessor() {
     }
 
     @Override
     public
-    int getValues(final GrowlPopup target, final int tweenType, final float[] returnValues) {
+    int getValues(final NotifyPopup target, final int tweenType, final float[] returnValues) {
         switch (tweenType) {
             case OPACITY:
                 returnValues[0] = target.getOpacity_Compat();
@@ -52,7 +52,7 @@ class GrowlPopupAccessor implements TweenAccessor<GrowlPopup> {
     @SuppressWarnings({"NumericCastThatLosesPrecision", "UnnecessaryReturnStatement"})
     @Override
     public
-    void setValues(final GrowlPopup target, final int tweenType, final float[] newValues) {
+    void setValues(final NotifyPopup target, final int tweenType, final float[] newValues) {
         switch (tweenType) {
             case OPACITY:
                 target.setOpacity_Compat(newValues[0]);

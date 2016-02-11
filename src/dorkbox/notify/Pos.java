@@ -13,21 +13,32 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package dorkbox.util.growl;
+package dorkbox.notify;
 
-import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
+public
+enum Pos {
+    /**
+     * top vertically, left horizontally
+     */
+    TOP_LEFT,
 
-class GrowlPopupWindowAdapter extends WindowAdapter {
-    public
-    void windowLostFocus(WindowEvent e) {
-        if (e.getNewState() != WindowEvent.WINDOW_CLOSED) {
-            GrowlPopup source = (GrowlPopup) e.getSource();
-            //toFront();
-            //requestFocus();
-            source.setAlwaysOnTop(false);
-            source.setAlwaysOnTop(true);
-            //requestFocusInWindow();
-        }
-    }
+    /**
+     * top vertically, right horizontally
+     */
+    TOP_RIGHT,
+
+    /**
+     * center both vertically and horizontally
+     */
+    CENTER,
+
+    /**
+     * bottom vertically, left horizontally
+     */
+    BOTTOM_LEFT,
+
+    /**
+     * bottom vertically, right horizontally
+     */
+    BOTTOM_RIGHT,
 }
