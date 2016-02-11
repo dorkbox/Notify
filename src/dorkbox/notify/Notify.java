@@ -65,7 +65,7 @@ class Notify {
     }
 
     /**
-     * Builder pattern to create the growl notification.
+     * Builder pattern to create the notification.
      */
     public static
     Notify create() {
@@ -73,8 +73,8 @@ class Notify {
     }
 
     /**
-     * Permits one to override the default images for the dialogs. This is NOT thread safe, and must be performed BEFORE using the GROWL
-     * system.
+     * Permits one to override the default images for the dialogs. This is NOT thread safe, and must be performed BEFORE showing a
+     * notification.
      * <p>
      * The image names are as follows:
      * <p>
