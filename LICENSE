@@ -1,4 +1,4 @@
-    - Dorkbox Growl - Apache 2.0 License
+    - Dorkbox Notify - Apache 2.0 License
       https://github.com/dorkbox
       Copyright 2015, dorkbox, llc
 
@@ -7,3 +7,27 @@
       https://bitbucket.org/controlsfx/controlsfx/
       Copyright 2013, 2014, ControlsFX
         Dialog icons by the ControlsFX project
+
+
+    - Dorkbox ObjectPool - Apache 2.0 License
+      https://github.com/dorkbox
+      Copyright 2014, dorkbox, llc
+        Fast and compatible java object pool
+
+
+    - Dorkbox TweenEngine - Apache 2.0 License
+      https://github.com/dorkbox
+      Copyright 2015, dorkbox, llc
+        Animation/Tween framework for java
+
+
+    - Java Universal Tween Engine - Apache 2.0 License
+      https://code.google.com/p/java-universal-tween-engine/
+      Copyright 2012, Aurelien Ribon
+        Abandoned project, origin of TweenEngine code fork.
+
+
+    - Robert Penner's Easing Functions - BSD 3-clause License
+      http://robertpenner.com/easing/
+      Copyright 2001, Robert Penner
+        Tween easing algorithms
