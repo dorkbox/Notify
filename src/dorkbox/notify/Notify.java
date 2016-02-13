@@ -63,7 +63,7 @@ class Notify {
      */
     public static
     String getVersion() {
-        return "2.0";
+        return "2.5";
     }
 
     /**
@@ -365,10 +365,4 @@ class Notify {
         graphic = null;
     }
 }
-
-
-
-
-
-
 
