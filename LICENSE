@@ -1,6 +1,7 @@
     - Dorkbox Notify - Apache 2.0 License
       https://github.com/dorkbox
       Copyright 2015, dorkbox, llc
+        Cross platform, growl/toast/notification popups for Java 6+
 
 
     - ControlsFX - BSD 3-clause License
@@ -12,13 +13,13 @@
     - Dorkbox ObjectPool - Apache 2.0 License
       https://github.com/dorkbox
       Copyright 2014, dorkbox, llc
-        Fast and compatible java object pool
+        Fast and compatible, blocking/non-blocking/soft-reference object pool for Java 6+
 
 
     - Dorkbox TweenEngine - Apache 2.0 License
       https://github.com/dorkbox
       Copyright 2015, dorkbox, llc
-        Animation/Tween framework for java
+        High performance Animation/Tween framework for Java 6+
 
 
     - Java Universal Tween Engine - Apache 2.0 License
