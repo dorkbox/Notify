@@ -15,22 +15,19 @@
  */
 package dorkbox.notify;
 
-import dorkbox.util.ActionHandlerLong;
-import dorkbox.util.OS;
-import dorkbox.util.Property;
-import dorkbox.util.ScreenUtil;
-import dorkbox.util.SwingUtil;
-import dorkbox.util.swing.SwingActiveRender;
-import dorkbox.tweenengine.BaseTween;
-import dorkbox.tweenengine.Tween;
-import dorkbox.tweenengine.TweenCallback;
-import dorkbox.tweenengine.TweenEquations;
-import dorkbox.tweenengine.TweenManager;
-
-import javax.swing.ImageIcon;
-import javax.swing.JFrame;
-import javax.swing.JLabel;
-import java.awt.*;
+import java.awt.BasicStroke;
+import java.awt.Color;
+import java.awt.Font;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
+import java.awt.GraphicsDevice;
+import java.awt.GraphicsEnvironment;
+import java.awt.Image;
+import java.awt.MouseInfo;
+import java.awt.Point;
+import java.awt.Rectangle;
+import java.awt.Stroke;
+import java.awt.Toolkit;
 import java.awt.event.MouseAdapter;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
@@ -40,6 +37,22 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
 
+import javax.swing.ImageIcon;
+import javax.swing.JFrame;
+import javax.swing.JLabel;
+
+import dorkbox.tweenengine.BaseTween;
+import dorkbox.tweenengine.Tween;
+import dorkbox.tweenengine.TweenCallback;
+import dorkbox.tweenengine.TweenEquations;
+import dorkbox.tweenengine.TweenManager;
+import dorkbox.util.ActionHandlerLong;
+import dorkbox.util.OS;
+import dorkbox.util.Property;
+import dorkbox.util.ScreenUtil;
+import dorkbox.util.SwingUtil;
+import dorkbox.util.swing.SwingActiveRender;
+
 // we can't use regular popup, because if we have no owner, it won't work!
 // instead, we just create a JFrame and use it to hold our content
 @SuppressWarnings({"Duplicates", "FieldCanBeLocal"})
@@ -48,16 +61,16 @@ class NotifyPopup extends JFrame {
     private static final long serialVersionUID = 1L;
 
     @Property
-    /** title font used by Notify */
+    /** This is the title font used by a notification. */
     public static String TITLE_TEXT_FONT = "Source Code Pro BOLD 16";
 
     @Property
-    /** main text font used by Notify */
+    /** This is the main text font used by a notification. */
     public static String MAIN_TEXT_FONT = "Source Code Pro BOLD 12";
 
     @Property
     /** How long we want it to take for the popups to relocate when one is closed */
-    public static final float MOVE_DURATION = 1.0F;
+    public static float MOVE_DURATION = 1.0F;
 
     private static final int padding = 40;
 
