@@ -3,7 +3,7 @@ Notify
 
 Cross platform notification popups, similar to "Growl" on OSX, "Toasts" on Windows, and "Notifications" on Ubuntu.
 
-This small library is displays notifications on any screen, in any corner.
+This small library can display notifications on any screen, in any corner.
 
 Primary Features:
 
@@ -28,12 +28,27 @@ Customization parameters:
 -ActiveRenderLoop.TARGET_FPS  (type int, default value '30')
  - Allows you to customize the delay (for hiding the popup) when the cursor is "moused out" of the popup menu
 
+
 -OS.FORCE_HIGH_RES_TIMER  (type boolean, default value 'true')
  - By default, the timer resolution in some operating systems are not particularly high-resolution (ie: 'Thread.sleep(1)' will not really
   sleep for 1ms, but will really sleep for 16ms). This forces the JVM to use high resolution timers.
 
+ - NOTE: this option is a primary option and should set before any of the other options are set
+
 Notify.IMAGE_PATH    (type String, default value 'resources')
  - Location of the dialog image resources. By default they must be in the 'resources' directory relative to the application
+ 
+ 
+NotifyPopup.TITLE_TEXT_FONT    (type String, default value 'Source Code Pro BOLD 16')
+ - This is the title font used by a notification.
+
+ 
+NotifyPopup.MAIN_TEXT_FONT    (type String, default value 'Source Code Pro BOLD 12')
+ - This is the main text font used by a notification.
+    
+ 
+NotifyPopup.MOVE_DURATION    (type float, default value '1.0F')
+ - How long we want it to take for the popups to relocate when one is closed
 ```
 
 ![light theme](https://raw.githubusercontent.com/dorkbox/Notify/master/notify-light.png)
