@@ -15,12 +15,6 @@
  */
 package dorkbox.notify;
 
-import dorkbox.util.ActionHandler;
-import dorkbox.util.LocationResolver;
-import dorkbox.util.SwingUtil;
-
-import javax.imageio.ImageIO;
-import javax.swing.ImageIcon;
 import java.awt.Image;
 import java.awt.image.BufferedImage;
 import java.io.File;
@@ -28,6 +22,13 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
 import java.util.Map;
+
+import javax.imageio.ImageIO;
+import javax.swing.ImageIcon;
+
+import dorkbox.util.ActionHandler;
+import dorkbox.util.LocationResolver;
+import dorkbox.util.SwingUtil;
 
 /**
  * Popup notification messages, similar to the popular "Growl" notification system on macosx, that display in the corner of the monitor.
@@ -63,7 +64,7 @@ class Notify {
      */
     public static
     String getVersion() {
-        return "2.13";
+        return "2.14";
     }
 
     /**
