@@ -26,7 +26,8 @@ Primary Features:
 Customization parameters:
 
 -ActiveRenderLoop.TARGET_FPS  (type int, default value '30')
- - Allows you to customize the delay (for hiding the popup) when the cursor is "moused out" of the popup menu
+ - How many frames per second we want the Swing ActiveRender thread to run at?
+ - NOTE: The ActiveRenderLoop replaces the Swing EDT in order to enable smoother animations.
 
 
 -OS.FORCE_HIGH_RES_TIMER  (type boolean, default value 'true')
@@ -65,7 +66,7 @@ This project is **kept in sync** with the utilities library, so "jar hell" is no
 <dependency>
   <groupId>com.dorkbox</groupId>
   <artifactId>Notify</artifactId>
-  <version>2.14</version>
+  <version>2.15</version>
 </dependency>
 ```
 
