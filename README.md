@@ -21,6 +21,7 @@ Primary Features:
 
 - This is for cross-platform use, specifically - linux 32/64, mac 32/64, and windows 32/64. Java 6+
 - You will need the images in the 'resources' directory, in addition to the normal libs.
+- Note: If you want to COMPLETELY remove repainting by the swing EDT (for the entire JVM), run `NullRepaintManager.install();`
 
 ```
 Customization parameters:
@@ -66,7 +67,7 @@ This project is **kept in sync** with the utilities library, so "jar hell" is no
 <dependency>
   <groupId>com.dorkbox</groupId>
   <artifactId>Notify</artifactId>
-  <version>2.15</version>
+  <version>2.16</version>
 </dependency>
 ```
 
