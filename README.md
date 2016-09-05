@@ -28,7 +28,10 @@ Customization parameters:
 
 -ActiveRenderLoop.TARGET_FPS  (type int, default value '30')
  - How many frames per second we want the Swing ActiveRender thread to run at?
- - NOTE: The ActiveRenderLoop replaces the Swing EDT in order to enable smoother animations.
+ - NOTE: The ActiveRenderLoop replaces the Swing EDT (only for specified JFrames) in order to enable smoother animations. 
+  It is also important to REMEMBER -- if you add a component to an actively managed JFrame, YOU MUST make sure to call
+  JComponent.setIgnoreRepaint(boolean) otherwise this component will "fight" on the EDT for updates. You can completely
+  disable the EDT by calling NullRepaintManager.install()
 
 
 -OS.FORCE_HIGH_RES_TIMER  (type boolean, default value 'true')
