@@ -20,14 +20,23 @@ import java.awt.event.WindowEvent;
 
 class NotifyPopupWindowAdapter extends WindowAdapter {
     public
+    void windowClosing(WindowEvent e) {
+        if (e.getNewState() != WindowEvent.WINDOW_CLOSED) {
+            NotifyPopup source = (NotifyPopup) e.getSource();
+            source.close();
+        }
+    }
+
+    public
     void windowLostFocus(WindowEvent e) {
         if (e.getNewState() != WindowEvent.WINDOW_CLOSED) {
             NotifyPopup source = (NotifyPopup) e.getSource();
+            // these don't work
             //toFront();
             //requestFocus();
+            //requestFocusInWindow();
             source.setAlwaysOnTop(false);
             source.setAlwaysOnTop(true);
-            //requestFocusInWindow();
         }
     }
 }
