@@ -266,7 +266,7 @@ class Notify {
     void show() {
         // must be done in the swing EDT
         //noinspection Convert2Lambda
-        SwingUtil.invokeAndWait(new Runnable() {
+        SwingUtil.invokeAndWaitQuietly(new Runnable() {
             @Override
             public
             void run() {
