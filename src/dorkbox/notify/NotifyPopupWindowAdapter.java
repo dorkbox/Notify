@@ -30,4 +30,11 @@ class NotifyPopupWindowAdapter extends WindowAdapter {
             //requestFocusInWindow();
         }
     }
+    public
+    void windowClosing(WindowEvent e) {
+        if (e.getNewState() != WindowEvent.WINDOW_CLOSED) {
+            NotifyPopup source = (NotifyPopup) e.getSource();
+            source.close();
+        }
+    }
 }
