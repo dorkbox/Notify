@@ -34,12 +34,6 @@ Customization parameters:
   disable the EDT by calling NullRepaintManager.install()
 
 
--OS.FORCE_HIGH_RES_TIMER  (type boolean, default value 'true')
- - By default, the timer resolution in some operating systems are not particularly high-resolution (ie: 'Thread.sleep(1)' will not really
-  sleep for 1ms, but will really sleep for 16ms). This forces the JVM to use high resolution timers.
-
- - NOTE: this option is a primary option and should set before any of the other options are set
-
 Notify.IMAGE_PATH    (type String, default value 'resources')
  - Location of the dialog image resources. By default they must be in the 'resources' directory relative to the application
  
