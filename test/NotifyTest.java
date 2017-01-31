@@ -13,9 +13,9 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-import dorkbox.util.ActionHandler;
 import dorkbox.notify.Notify;
 import dorkbox.notify.Pos;
+import dorkbox.util.ActionHandler;
 
 public
 class NotifyTest {
@@ -29,7 +29,8 @@ class NotifyTest {
         for (int i = 0; i < count; i++) {
             notify = Notify.create()
                            .title("Notify title " + i)
-                           .text("This is a notification popup message This is a notification popup message This is a notification popup message")
+                           .text("This is a notification " + i + " popup message This is a notification popup message This is a " +
+                                 "notification popup message")
                            .hideAfter(50000)
                            .position(Pos.TOP_RIGHT)
 //                       .setScreen(0)
