@@ -7,8 +7,8 @@ This small library can display notifications on any screen, in any corner.
 
 Primary Features:
 
-1. Can specify which screen 
-2. Can specify which corner, center is also possible
+1. Can specify which screen to use for notification
+2. Can specify which corner (center is also possible) to use for notification 
 3. If no location is specified, it will show on whatever screen the mouse is on.
 4. Duration timeouts, with progress indicator on notification
 5. Light or Dark themes
