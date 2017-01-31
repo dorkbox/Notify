@@ -26,6 +26,7 @@ import java.awt.Image;
 import java.awt.MouseInfo;
 import java.awt.Point;
 import java.awt.Rectangle;
+import java.awt.RenderingHints;
 import java.awt.Stroke;
 import java.awt.Toolkit;
 import java.awt.event.MouseAdapter;
@@ -275,6 +276,79 @@ class NotifyPopup extends JFrame {
             default:
                 throw new RuntimeException("Unknown position. '" + position + "'");
         }
+
+        // now we setup the rendering of the image
+        renderBackgroundInfo();
+    }
+
+    private
+    void renderBackgroundInfo() {
+        cachedImage = new BufferedImage(getWidth(), getHeight(), BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2 = cachedImage.createGraphics();
+        g2.addRenderingHints(new RenderingHints(RenderingHints.KEY_RENDERING,
+                                                 RenderingHints.VALUE_RENDER_QUALITY));
+
+        try {
+            g2.setColor(panel_BG);
+            g2.fillRect(0, 0, WIDTH, HEIGHT);
+
+            // Draw the title text
+            Font titleTextFont = SwingUtil.parseFont(TITLE_TEXT_FONT);
+            g2.setColor(titleText_FG);
+            g2.setFont(titleTextFont);
+            g2.drawString(notification.title, 5, 20);
+
+
+            int posX = 10;
+            int textLengthLimit = 108;
+
+            // ICON
+            if (imageIcon != null) {
+                textLengthLimit = 88;
+                posX = 60;
+                // Draw the image
+                imageIcon.paintIcon(this, g2, 5, 30);
+            }
+
+            // Draw the main text
+            Font mainTextFont = SwingUtil.parseFont(MAIN_TEXT_FONT);
+            String notText = notification.text;
+            int length = notText.length();
+            StringBuilder text = new StringBuilder(length);
+
+            // are we "html" already? just check for the starting tag and strip off END html tag
+            if (length >= 13 && notText.regionMatches(true, length-7, "</html>", 0, 7)) {
+                text.append(notText);
+                text.delete(text.length() - 7, text.length());
+
+                length -= 7;
+            }
+            else {
+                text.append("<html>");
+                text.append(notText);
+            }
+
+            // make sure the text is the correct length
+            if (length > textLengthLimit) {
+                text.delete(6 + textLengthLimit, text.length());
+                text.append("...");
+            }
+            text.append("</html>");
+
+            JLabel mainTextLabel = new JLabel();
+            mainTextLabel.setForeground(mainText_FG);
+            mainTextLabel.setFont(mainTextFont);
+            mainTextLabel.setText(text.toString());
+
+            int posY = -8;
+            mainTextLabel.setBounds(0, 0, WIDTH - posX - 2, HEIGHT);
+
+            g2.translate(posX, posY);
+            mainTextLabel.paint(g2);
+            g2.translate(-posX, -posY);
+        } finally {
+            g2.dispose();
+        }
     }
 
     @Override
@@ -287,106 +361,36 @@ class NotifyPopup extends JFrame {
         if (width <= 0 || height <= 0) {
             return;
         }
-        if (cachedImage == null) {
-            cachedImage = new BufferedImage(width, height, BufferedImage.TYPE_INT_ARGB);
 
-            Graphics g2 = cachedImage.createGraphics();
-            try {
-                g2.setColor(panel_BG);
-                g2.fillRect(0, 0, WIDTH, HEIGHT);
+        // use our cached image, so we don't have to re-render text/background/etc
+        g.drawImage(cachedImage, 0, 0, null);
 
-                // Draw the title text
-                Font titleTextFont = SwingUtil.parseFont(TITLE_TEXT_FONT);
-                g2.setColor(titleText_FG);
-                g2.setFont(titleTextFont);
-                g2.drawString(notification.title, 5, 20);
+        // the progress bar and close button are the only things that can change, so we always draw them
+        Graphics2D g2 = (Graphics2D) g.create();
+        try {
+            if (showCloseButton) {
+                Graphics2D g3 = (Graphics2D) g.create();
 
+                g3.setColor(panel_BG);
+                g3.setStroke(stroke);
 
-
-                int posX = 10;
-                int textLengthLimit = 108;
-
-                // ICON
-                if (imageIcon != null) {
-                    textLengthLimit = 88;
-                    posX = 60;
-                    // Draw the image
-                    imageIcon.paintIcon(this, g2, 5, 30);
+                final Point p = getMousePosition();
+                // reasonable position for detecting mouse over
+                if (p != null && p.getX() >= 280 && p.getY() <= 20) {
+                    g3.setColor(Color.RED);
+                } else {
+                    g3.setColor(closeX_FG);
                 }
 
-                // Draw the main text
-                Font mainTextFont = SwingUtil.parseFont(MAIN_TEXT_FONT);
-                String notText = notification.text;
-                int length = notText.length();
-                StringBuilder text = new StringBuilder(length);
-
-                // are we "html" already? just check for the starting tag and strip off END html tag
-                if (length >= 13 && notText.regionMatches(true, length-7, "</html>", 0, 7)) {
-                    text.append(notText);
-                    text.delete(text.length() - 7, text.length());
-
-                    length -= 7;
-                }
-                else {
-                    text.append("<html>");
-                    text.append(notText);
-                }
-
-                // make sure the text is the correct length
-                if (length > textLengthLimit) {
-                    text.delete(6 + textLengthLimit, text.length());
-                    text.append("...");
-                }
-                text.append("</html>");
-
-                JLabel mainTextLabel = new JLabel();
-                mainTextLabel.setForeground(mainText_FG);
-                mainTextLabel.setFont(mainTextFont);
-                mainTextLabel.setText(text.toString());
-
-                int posY = -8;
-                mainTextLabel.setBounds(0, 0, WIDTH - posX - 2, HEIGHT);
-
-                g2.translate(posX, posY);
-                mainTextLabel.paint(g2);
-                g2.translate(-posX, -posY);
-            } finally {
-                g2.dispose();
+                // draw the X
+                g3.drawLine(X_1, Y_1, X_2, Y_2);
+                g3.drawLine(X_2, Y_1, X_1, Y_2);
             }
 
-            g.drawImage(cachedImage, 0, 0, null);
-        }
-        else {
-            // use our cached image, so we don't have to re-render text
-            g.drawImage(cachedImage, getX(), getY(), null);
-
-            // the progress bar and close button are the only things that can change, so we always draw them
-            Graphics2D g2 = (Graphics2D) g.create();
-            try {
-                if (showCloseButton) {
-                    Graphics2D g3 = (Graphics2D) g.create();
-
-                    g3.setColor(panel_BG);
-                    g3.setStroke(stroke);
-
-                    final Point p = getMousePosition();
-                    // reasonable position for detecting mouse over
-                    if (p != null && p.getX() >= 280 && p.getY() <= 20) {
-                        g3.setColor(Color.RED);
-                    } else {
-                        g3.setColor(closeX_FG);
-                    }
-
-                    // draw the X
-                    g3.drawLine(X_1, Y_1, X_2, Y_2);
-                    g3.drawLine(X_2, Y_1, X_1, Y_2);
-                }
-
-                g2.setColor(progress_FG);
-                g2.fillRect(0, PROGRESS_HEIGHT, progress, 1);
-            } finally {
-                g2.dispose();
-            }
+            g2.setColor(progress_FG);
+            g2.fillRect(0, PROGRESS_HEIGHT, progress, 1);
+        } finally {
+            g2.dispose();
         }
     }
 
