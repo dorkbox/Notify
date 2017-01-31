@@ -282,7 +282,11 @@ class Notify {
                     if (name != null) {
                         imageIcon = imageIconCache.get(name);
                         if (imageIcon == null) {
-                            imageIcon = new ImageIcon(graphic);
+                            Image image = new ImageIcon(graphic).getImage();
+
+                            // have to do this twice, so that it will finish loading the image (weird callback stuff is required if we don't do this)
+                            imageIcon = new ImageIcon(image);
+
                             imageIconCache.put(name, imageIcon);
                         }
                     }
