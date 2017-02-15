@@ -48,7 +48,6 @@ import dorkbox.tweenengine.TweenCallback;
 import dorkbox.tweenengine.TweenEquations;
 import dorkbox.tweenengine.TweenManager;
 import dorkbox.util.ActionHandlerLong;
-import dorkbox.util.OS;
 import dorkbox.util.Property;
 import dorkbox.util.ScreenUtil;
 import dorkbox.util.SwingUtil;
@@ -81,8 +80,6 @@ class NotifyPopup extends JFrame {
     private static final TweenManager tweenManager = new TweenManager();
     private static ActionHandlerLong frameStartHandler;
 
-    private static WindowUtil opacity_compat;
-
     static {
         // this is for updating the tween engine during active-rendering
         frameStartHandler = new ActionHandlerLong() {
@@ -92,12 +89,6 @@ class NotifyPopup extends JFrame {
                 NotifyPopup.tweenManager.update(deltaInNanos);
             }
         };
-
-        if (OS.javaVersion == 6) {
-            opacity_compat = new WindowUtil_Java6();
-        } else {
-            opacity_compat = new WindowUtil_Java7plus();
-        }
     }
 
     private static final int WIDTH = 300;
@@ -158,7 +149,6 @@ class NotifyPopup extends JFrame {
 
         setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
         setUndecorated(true);
-        setOpacity_Compat(1.0F);
         setAlwaysOnTop(false);
         setAlwaysOnTop(true);
         setLayout(null);
@@ -638,16 +628,6 @@ class NotifyPopup extends JFrame {
                            .repeatAutoReverse(count, 0)
                            .ease(TweenEquations.Linear);
         tweenManager.add(tween);
-    }
-
-
-    void setOpacity_Compat(float opacity) {
-        opacity_compat.setOpacity(this, opacity);
-    }
-
-    public
-    float getOpacity_Compat() {
-        return opacity_compat.getOpacity(this);
     }
 
     public

@@ -19,7 +19,6 @@ import dorkbox.tweenengine.TweenAccessor;
 
 class NotifyPopupAccessor implements TweenAccessor<NotifyPopup> {
 
-    static final int OPACITY = 0;
     static final int Y_POS = 1;
     static final int X_Y_POS = 2;
     static final int PROGRESS = 3;
@@ -32,9 +31,6 @@ class NotifyPopupAccessor implements TweenAccessor<NotifyPopup> {
     public
     int getValues(final NotifyPopup target, final int tweenType, final float[] returnValues) {
         switch (tweenType) {
-            case OPACITY:
-                returnValues[0] = target.getOpacity_Compat();
-                return 1;
             case Y_POS:
                 returnValues[0] = (float) target.getY();
                 return 1;
@@ -54,9 +50,6 @@ class NotifyPopupAccessor implements TweenAccessor<NotifyPopup> {
     public
     void setValues(final NotifyPopup target, final int tweenType, final float[] newValues) {
         switch (tweenType) {
-            case OPACITY:
-                target.setOpacity_Compat(newValues[0]);
-                return;
             case Y_POS:
                 target.setY((int) newValues[0]);
                 return;
