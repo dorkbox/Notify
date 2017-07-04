@@ -48,6 +48,7 @@ import dorkbox.tweenengine.TweenCallback;
 import dorkbox.tweenengine.TweenEquations;
 import dorkbox.tweenengine.TweenManager;
 import dorkbox.util.ActionHandlerLong;
+import dorkbox.util.FontUtil;
 import dorkbox.util.Property;
 import dorkbox.util.ScreenUtil;
 import dorkbox.util.SwingUtil;
@@ -283,7 +284,7 @@ class NotifyPopup extends JFrame {
             g2.fillRect(0, 0, WIDTH, HEIGHT);
 
             // Draw the title text
-            Font titleTextFont = SwingUtil.parseFont(TITLE_TEXT_FONT);
+            Font titleTextFont = FontUtil.parseFont(TITLE_TEXT_FONT);
             g2.setColor(titleText_FG);
             g2.setFont(titleTextFont);
             g2.drawString(notification.title, 5, 20);
@@ -301,7 +302,7 @@ class NotifyPopup extends JFrame {
             }
 
             // Draw the main text
-            Font mainTextFont = SwingUtil.parseFont(MAIN_TEXT_FONT);
+            Font mainTextFont = FontUtil.parseFont(MAIN_TEXT_FONT);
             String notText = notification.text;
             int length = notText.length();
             StringBuilder text = new StringBuilder(length);
