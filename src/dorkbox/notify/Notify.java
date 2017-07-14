@@ -28,7 +28,7 @@ import javax.swing.ImageIcon;
 
 import dorkbox.util.ActionHandler;
 import dorkbox.util.LocationResolver;
-import dorkbox.util.SwingUtil;
+import dorkbox.util.Swing;
 
 /**
  * Popup notification messages, similar to the popular "Growl" notification system on macosx, that display in the corner of the monitor.
@@ -266,7 +266,7 @@ class Notify {
     void show() {
         // must be done in the swing EDT
         //noinspection Convert2Lambda
-        SwingUtil.invokeAndWaitQuietly(new Runnable() {
+        Swing.invokeAndWaitQuietly(new Runnable() {
             @Override
             public
             void run() {
@@ -320,7 +320,7 @@ class Notify {
         if (notifyPopup != null) {
             // must be done in the swing EDT
             //noinspection Convert2Lambda
-            SwingUtil.invokeLater(new Runnable() {
+            Swing.invokeLater(new Runnable() {
                 @Override
                 public
                 void run() {
@@ -343,7 +343,7 @@ class Notify {
 
         // must be done in the swing EDT
         //noinspection Convert2Lambda
-        SwingUtil.invokeLater(new Runnable() {
+        Swing.invokeLater(new Runnable() {
             @Override
             public
             void run() {

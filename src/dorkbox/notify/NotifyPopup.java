@@ -17,7 +17,6 @@ package dorkbox.notify;
 
 import java.awt.BasicStroke;
 import java.awt.Color;
-import java.awt.Font;
 import java.awt.Graphics;
 import java.awt.Graphics2D;
 import java.awt.GraphicsDevice;
@@ -48,10 +47,10 @@ import dorkbox.tweenengine.TweenCallback;
 import dorkbox.tweenengine.TweenEquations;
 import dorkbox.tweenengine.TweenManager;
 import dorkbox.util.ActionHandlerLong;
-import dorkbox.util.FontUtil;
+import dorkbox.util.Font;
 import dorkbox.util.Property;
 import dorkbox.util.ScreenUtil;
-import dorkbox.util.SwingUtil;
+import dorkbox.util.Swing;
 import dorkbox.util.swing.SwingActiveRender;
 
 // we can't use regular popup, because if we have no owner, it won't work!
@@ -163,7 +162,7 @@ class NotifyPopup extends JFrame {
         if (image != null) {
             setIconImage(image);
         } else {
-            setIconImage(SwingUtil.BLANK_ICON);
+            setIconImage(Swing.BLANK_ICON);
         }
 
 
@@ -284,7 +283,7 @@ class NotifyPopup extends JFrame {
             g2.fillRect(0, 0, WIDTH, HEIGHT);
 
             // Draw the title text
-            Font titleTextFont = FontUtil.parseFont(TITLE_TEXT_FONT);
+            java.awt.Font titleTextFont = Font.parseFont(TITLE_TEXT_FONT);
             g2.setColor(titleText_FG);
             g2.setFont(titleTextFont);
             g2.drawString(notification.title, 5, 20);
@@ -302,7 +301,7 @@ class NotifyPopup extends JFrame {
             }
 
             // Draw the main text
-            Font mainTextFont = FontUtil.parseFont(MAIN_TEXT_FONT);
+            java.awt.Font mainTextFont = Font.parseFont(MAIN_TEXT_FONT);
             String notText = notification.text;
             int length = notText.length();
             StringBuilder text = new StringBuilder(length);
