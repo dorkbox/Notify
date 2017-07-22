@@ -28,7 +28,9 @@ import javax.swing.ImageIcon;
 
 import dorkbox.util.ActionHandler;
 import dorkbox.util.LocationResolver;
+import dorkbox.util.Property;
 import dorkbox.util.SwingUtil;
+import dorkbox.util.Version;
 
 /**
  * Popup notification messages, similar to the popular "Growl" notification system on macosx, that display in the corner of the monitor.
@@ -54,6 +56,7 @@ class Notify {
     /**
      * Location of the dialog image resources. By default they must be in the 'resources' directory relative to the application
      */
+    @Property
     public static String IMAGE_PATH = "resources";
 
     private static Map<String, BufferedImage> imageCache = new HashMap<String, BufferedImage>(4);
@@ -63,8 +66,8 @@ class Notify {
      * Gets the version number.
      */
     public static
-    String getVersion() {
-        return "2.20";
+    Version getVersion() {
+        return new Version("2.20");
     }
 
     /**
