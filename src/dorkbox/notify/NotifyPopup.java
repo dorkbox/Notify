@@ -27,13 +27,12 @@ import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.RenderingHints;
 import java.awt.Stroke;
-import java.awt.Toolkit;
 import java.awt.event.MouseAdapter;
 import java.awt.event.WindowAdapter;
-import java.awt.event.WindowEvent;
 import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
 import java.util.Random;
 
@@ -46,6 +45,7 @@ import dorkbox.tweenengine.Tween;
 import dorkbox.tweenengine.TweenCallback;
 import dorkbox.tweenengine.TweenEquations;
 import dorkbox.tweenengine.TweenManager;
+import dorkbox.util.ActionHandler;
 import dorkbox.util.ActionHandlerLong;
 import dorkbox.util.FontUtil;
 import dorkbox.util.Property;
@@ -55,7 +55,7 @@ import dorkbox.util.swing.SwingActiveRender;
 
 // we can't use regular popup, because if we have no owner, it won't work!
 // instead, we just create a JFrame and use it to hold our content
-@SuppressWarnings({"Duplicates", "FieldCanBeLocal"})
+@SuppressWarnings({"Duplicates", "FieldCanBeLocal", "WeakerAccess", "DanglingJavadoc"})
 public
 class NotifyPopup extends JFrame {
     private static final long serialVersionUID = 1L;
@@ -78,7 +78,7 @@ class NotifyPopup extends JFrame {
 
     private static final NotifyPopupAccessor accessor = new NotifyPopupAccessor();
     private static final TweenManager tweenManager = new TweenManager();
-    private static ActionHandlerLong frameStartHandler;
+    private static final ActionHandlerLong frameStartHandler;
 
     static {
         // this is for updating the tween engine during active-rendering
@@ -114,38 +114,37 @@ class NotifyPopup extends JFrame {
     private final int anchorX;
     private final int anchorY;
 
-    private final WindowAdapter windowListener;
-    private final MouseAdapter mouseListener;
+    private static final WindowAdapter windowListener = new NotifyPopupWindowAdapter();
+    private static final MouseAdapter mouseListener = new NotifyPopupClickAdapter();
 
     private final Notify notification;
-    private final ImageIcon imageIcon;
+
+    private final float hideAfterDurationInSeconds;
+    private final Pos position;
+    private final ActionHandler<Notify> onCloseAction;
 
     // this is used in combination with position, so that we can track which screen and what position a popup is in
     private final String idAndPosition;
 
     private int popupIndex;
 
-    private Tween tween = null;
-    private Tween hideTween = null;
+    private volatile Tween tween = null;
+    private volatile Tween hideTween = null;
 
     // for the progress bar. we directly draw this onscreen
     // non-volatile because it's always accessed in the active render thread
     private int progress = 0;
 
     private final boolean showCloseButton;
-    private BufferedImage cachedImage;
+    private final BufferedImage cachedImage;
     private static final Random RANDOM = new Random();
 
 
 
     // this is on the swing EDT
     @SuppressWarnings("NumericCastThatLosesPrecision")
-    NotifyPopup(Notify notification, Image image, ImageIcon imageIcon) {
+    NotifyPopup(final Notify notification, final Image image, final ImageIcon imageIcon) {
         this.notification = notification;
-        this.imageIcon = imageIcon;
-
-        windowListener = new NotifyPopupWindowAdapter();
-        mouseListener = new NotifyPopupClickAdapter();
 
         setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
         setUndecorated(true);
@@ -187,6 +186,20 @@ class NotifyPopup extends JFrame {
 
         setBackground(panel_BG);
         showCloseButton = !notification.hideCloseButton;
+        hideAfterDurationInSeconds = notification.hideAfterDurationInMillis / 1000.0F;
+        position = notification.position;
+
+        if (notification.onCloseAction != null) {
+            onCloseAction = new ActionHandler<Notify>() {
+                @Override
+                public
+                void handle(final Notify value) {
+                    notification.onCloseAction.handle(notification);
+                }
+            };
+        } else {
+            onCloseAction = null;
+        }
 
         GraphicsDevice device;
         if (notification.screenNumber == Short.MIN_VALUE) {
@@ -268,15 +281,29 @@ class NotifyPopup extends JFrame {
         }
 
         // now we setup the rendering of the image
-        renderBackgroundInfo();
+        cachedImage = renderBackgroundInfo(notification.title, notification.text, titleText_FG, mainText_FG, panel_BG, imageIcon);
     }
 
-    private
-    void renderBackgroundInfo() {
-        cachedImage = new BufferedImage(getWidth(), getHeight(), BufferedImage.TYPE_INT_ARGB);
-        Graphics2D g2 = cachedImage.createGraphics();
-        g2.addRenderingHints(new RenderingHints(RenderingHints.KEY_RENDERING,
-                                                 RenderingHints.VALUE_RENDER_QUALITY));
+    private static
+    BufferedImage renderBackgroundInfo(final String title,
+                                       final String notificationText,
+                                       final Color titleText_FG,
+                                       final Color mainText_FG,
+                                       final Color panel_BG,
+                                       final ImageIcon imageIcon) {
+
+        BufferedImage image = new BufferedImage(WIDTH, HEIGHT, BufferedImage.TYPE_INT_ARGB);
+        Graphics2D g2 = image.createGraphics();
+        g2.setRenderingHint(RenderingHints.KEY_ALPHA_INTERPOLATION, RenderingHints.VALUE_ALPHA_INTERPOLATION_QUALITY);
+        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+        g2.setRenderingHint(RenderingHints.KEY_COLOR_RENDERING, RenderingHints.VALUE_COLOR_RENDER_QUALITY);
+        g2.setRenderingHint(RenderingHints.KEY_DITHERING, RenderingHints.VALUE_DITHER_ENABLE);
+        g2.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_ON);
+        g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
+        g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
+        g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+
+        // g2.addRenderingHints(new RenderingHints(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY));
 
         try {
             g2.setColor(panel_BG);
@@ -286,10 +313,11 @@ class NotifyPopup extends JFrame {
             java.awt.Font titleTextFont = FontUtil.parseFont(TITLE_TEXT_FONT);
             g2.setColor(titleText_FG);
             g2.setFont(titleTextFont);
-            g2.drawString(notification.title, 5, 20);
+            g2.drawString(title, 5, 20);
 
 
             int posX = 10;
+            int posY = -8;
             int textLengthLimit = 108;
 
             // ICON
@@ -297,25 +325,24 @@ class NotifyPopup extends JFrame {
                 textLengthLimit = 88;
                 posX = 60;
                 // Draw the image
-                imageIcon.paintIcon(this, g2, 5, 30);
+                imageIcon.paintIcon(null, g2, 5, 30);
             }
 
             // Draw the main text
             java.awt.Font mainTextFont = FontUtil.parseFont(MAIN_TEXT_FONT);
-            String notText = notification.text;
-            int length = notText.length();
+            int length = notificationText.length();
             StringBuilder text = new StringBuilder(length);
 
             // are we "html" already? just check for the starting tag and strip off END html tag
-            if (length >= 13 && notText.regionMatches(true, length-7, "</html>", 0, 7)) {
-                text.append(notText);
+            if (length >= 13 && notificationText.regionMatches(true, length-7, "</html>", 0, 7)) {
+                text.append(notificationText);
                 text.delete(text.length() - 7, text.length());
 
                 length -= 7;
             }
             else {
                 text.append("<html>");
-                text.append(notText);
+                text.append(notificationText);
             }
 
             // make sure the text is the correct length
@@ -329,8 +356,6 @@ class NotifyPopup extends JFrame {
             mainTextLabel.setForeground(mainText_FG);
             mainTextLabel.setFont(mainTextFont);
             mainTextLabel.setText(text.toString());
-
-            int posY = -8;
             mainTextLabel.setBounds(0, 0, WIDTH - posX - 2, HEIGHT);
 
             g2.translate(posX, posY);
@@ -339,23 +364,19 @@ class NotifyPopup extends JFrame {
         } finally {
             g2.dispose();
         }
+
+        return image;
     }
 
     @Override
     public
     void paint(Graphics g) {
         // we cache the text + image (to another image), and then always render the close + progressbar
-        int width = getWidth();
-        int height = getHeight();
-
-        if (width <= 0 || height <= 0) {
-            return;
-        }
 
         // use our cached image, so we don't have to re-render text/background/etc
         g.drawImage(cachedImage, 0, 0, null);
 
-        // the progress bar and close button are the only things that can change, so we always draw them
+        // the progress bar and close button are the only things that can change, so we always draw them every time
         Graphics2D g2 = (Graphics2D) g.create();
         try {
             if (showCloseButton) {
@@ -393,7 +414,9 @@ class NotifyPopup extends JFrame {
             close();
         }
         else {
-            notification.onClick();
+            if (onCloseAction != null) {
+                onCloseAction.handle(null);
+            }
             close();
         }
     }
@@ -401,8 +424,11 @@ class NotifyPopup extends JFrame {
     @Override
     public
     void setVisible(final boolean b) {
-        // necessary for active rendering
-        setIgnoreRepaint(true);
+        // was it already visible?
+        if (b == isVisible()) {
+            // prevent "double setting" visible state
+            return;
+        }
 
         super.setVisible(b);
 
@@ -420,26 +446,32 @@ class NotifyPopup extends JFrame {
     }
 
 
-    public void close() {
-        WindowEvent winClosingEvent = new WindowEvent(this, WindowEvent.WINDOW_CLOSING);
-        Toolkit.getDefaultToolkit().getSystemEventQueue().postEvent(winClosingEvent);
+    public
+    void close() {
+        // this must happen in the Swing EDT. This is usually called by the active renderer
+        SwingUtil.invokeLater(new Runnable() {
+            @Override
+            public
+            void run() {
+                // set it off screen (which is what the close method also does)
+                if (isVisible()) {
+                    setVisible(false);
+                }
 
-        // set it off screen (which is what the close method also does)
-        setVisible(false);
-        removeAll();
-        removeWindowListener(windowListener);
-        removeMouseListener(mouseListener);
-        setIconImage(null);
-        dispose();
+                removeAll();
+                removeWindowListener(windowListener);
+                removeMouseListener(mouseListener);
+                setIconImage(null);
+                dispose();
 
-        notification.onClose();
+                notification.onClose();
+            }
+        });
     }
 
 
-    // only called on the swing thread
+    // only called on the swing EDT thread
     void addPopupToMap() {
-        Pos position = notification.position;
-
         synchronized (popups) {
             ArrayList<NotifyPopup> notifyPopups = popups.get(idAndPosition);
             if (notifyPopups == null) {
@@ -463,22 +495,23 @@ class NotifyPopup extends JFrame {
             notifyPopups.add(this);
             setLocation(anchorX, targetY);
 
-            if (notification.hideAfterDurationInMillis > 0 && hideTween == null) {
+            if (hideAfterDurationInSeconds > 0 && hideTween == null) {
                 // begin a timeline to get rid of the popup (default is 5 seconds)
-                final float durationInSeconds = notification.hideAfterDurationInMillis / 1000.0F;
-
-                hideTween = Tween.to(this, NotifyPopupAccessor.PROGRESS, accessor, durationInSeconds)
+                hideTween = Tween.to(this, NotifyPopupAccessor.PROGRESS, accessor, hideAfterDurationInSeconds)
                                  .target(WIDTH)
                                  .ease(TweenEquations.Linear)
                                  .addCallback(new TweenCallback() {
                                      @Override
                                      public
                                      void onEvent(final int type, final BaseTween<?> source) {
-                                         close();
+                                         if (type == Events.END) {
+                                            close();
+                                         }
                                      }
                                  });
                 tweenManager.add(hideTween);
 
+                // start if we have stopped the timer
                 if (!SwingActiveRender.containsActiveRenderFrameStart(frameStartHandler)) {
                     tweenManager.resetUpdateTime();
                     SwingActiveRender.addActiveRenderFrameStart(frameStartHandler);
@@ -488,82 +521,73 @@ class NotifyPopup extends JFrame {
     }
 
 
-    // only called on the swing app thread
+    // only called on the swing app or SwingActiveRender thread
     private
     void removePopupFromMap() {
-        Pos position = notification.position;
         boolean showFromTop = isShowFromTop(position);
-
         synchronized (popups) {
-            final int popupIndex = this.popupIndex;
             final ArrayList<NotifyPopup> notifyPopups = popups.get(idAndPosition);
-            int length = notifyPopups.size();
 
-            final ArrayList<NotifyPopup> copies = new ArrayList<NotifyPopup>(length);
-
-            // if we are the LAST tween, don't adjust anything (since nothing will move anyways)
-            if (popupIndex == length - 1) {
-                notifyPopups.remove(popupIndex);
-
-                if (tween != null) {
-                    tween.kill();
-                }
-                if (hideTween != null) {
-                    hideTween.kill();
+            // there are two loops because it is necessary to kill + remove all tweens BEFORE adding new ones.
+            for (final NotifyPopup popup : notifyPopups) {
+                if (popup.tween != null) {
+                    popup.tween.kill(); // kill does it's thing on the next tick of animation cycle
+                    popup.tween = null;
                 }
 
-                // if there's nothing left, stop the timer.
-                if (popups.isEmpty()) {
-                    SwingActiveRender.removeActiveRenderFrameStart(frameStartHandler);
+                if (popup == this && popup.hideTween != null) {
+                    popup.hideTween.kill();
                 }
-                return;
             }
 
+            boolean adjustPopupPosition = false;
+            for (Iterator<NotifyPopup> iterator = notifyPopups.iterator(); iterator.hasNext(); ) {
+                final NotifyPopup popup = iterator.next();
 
-            int adjustedI = 0;
-            for (int i = 0; i < length; i++) {
-                final NotifyPopup popup = notifyPopups.get(i);
-
-                if (popup.tween != null) {
-                    popup.tween.kill();
+                if (popup == this) {
+                    adjustPopupPosition = true;
+                    iterator.remove();
                 }
-
-                if (i != popupIndex) {
-                    // move the others into the correct position
-                    int newPopupIndex = adjustedI++;
-                    popup.popupIndex = newPopupIndex;
+                else if (adjustPopupPosition) {
+                    int index = popup.popupIndex - 1;
+                    popup.popupIndex = index;
 
                     // the popups are ALL the same size!
                     // popups at TOP grow down, popups at BOTTOM grow up
                     int changedY;
                     if (showFromTop) {
-                        changedY = popup.anchorY + (newPopupIndex * (HEIGHT + 10));
+                        changedY = popup.anchorY + (index * (HEIGHT + 10));
                     }
                     else {
-                        changedY = popup.anchorY - (newPopupIndex * (HEIGHT + 10));
+                        changedY = popup.anchorY - (index * (HEIGHT + 10));
                     }
-                    copies.add(popup);
 
                     // now animate that popup to it's new location
                     Tween tween = Tween.to(popup, NotifyPopupAccessor.Y_POS, accessor, MOVE_DURATION)
                                        .target((float) changedY)
-                                       .ease(TweenEquations.Linear);
+                                       .ease(TweenEquations.Linear)
+                                       .addCallback(new TweenCallback() {
+                                           @Override
+                                           public
+                                           void onEvent(final int type, final BaseTween<?> source) {
+                                               // if (type == Events.END) {
+                                               // make sure to remove the tween once it's done, otherwise .kill can do weird things.
+                                               popup.hideTween = null;
+                                               // }
+                                           }
+                                       });
 
-                    tweenManager.add(tween);
                     popup.tween = tween;
-                }
-                else {
-                    if (hideTween != null) {
-                        hideTween.kill();
-                    }
+                    tweenManager.add(tween);
                 }
             }
 
-            notifyPopups.clear();
-            popups.put(idAndPosition, copies);
-
             // if there's nothing left, stop the timer.
-            if (!SwingActiveRender.containsActiveRenderFrameStart(frameStartHandler)) {
+            if (popups.isEmpty()) {
+                SwingActiveRender.removeActiveRenderFrameStart(frameStartHandler);
+            }
+            // start if we have stopped the timer
+            else if (!SwingActiveRender.containsActiveRenderFrameStart(frameStartHandler)) {
                 tweenManager.resetUpdateTime();
                 SwingActiveRender.addActiveRenderFrameStart(frameStartHandler);
             }
@@ -630,12 +654,10 @@ class NotifyPopup extends JFrame {
         tweenManager.add(tween);
     }
 
-    public
     int getProgress() {
         return progress;
     }
 
-    public
     void setProgress(final int progress) {
         this.progress = progress;
     }

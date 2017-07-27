@@ -50,6 +50,7 @@ import dorkbox.util.Version;
  * }
  * </pre>
  */
+@SuppressWarnings({"WeakerAccess", "unused", "UnusedReturnValue"})
 public final
 class Notify {
 
@@ -129,14 +130,18 @@ class Notify {
 
     String title;
     String text;
+
     Pos position = Pos.BOTTOM_RIGHT;
     int hideAfterDurationInMillis = 0;
+
     boolean hideCloseButton;
     boolean isDark = false;
     int screenNumber = Short.MIN_VALUE;
     private Image graphic;
-    private ActionHandler<Notify> onAction;
+
+    ActionHandler<Notify> onCloseAction;
     private NotifyPopup notifyPopup;
+
     private String name;
     private int shakeDurationInMillis = 0;
     private int shakeAmplitude = 0;
@@ -200,7 +205,7 @@ class Notify {
      */
     public
     Notify onAction(ActionHandler<Notify> onAction) {
-        this.onAction = onAction;
+        this.onCloseAction = onAction;
         return this;
     }
 
@@ -362,10 +367,6 @@ class Notify {
     Notify setScreen(final int screenNumber) {
         this.screenNumber = screenNumber;
         return this;
-    }
-
-    void onClick() {
-        onAction.handle(this);
     }
 
     void onClose() {
