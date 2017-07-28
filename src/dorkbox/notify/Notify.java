@@ -16,6 +16,7 @@
 package dorkbox.notify;
 
 import java.awt.Image;
+import java.awt.Window;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -53,6 +54,24 @@ import dorkbox.util.Version;
 @SuppressWarnings({"WeakerAccess", "unused", "UnusedReturnValue"})
 public final
 class Notify {
+
+    /**
+     * This is the title font used by a notification.
+     */
+    @Property
+    public static String TITLE_TEXT_FONT = "Source Code Pro BOLD 16";
+
+    /**
+     * This is the main text font used by a notification.
+     */
+    @Property
+    public static String MAIN_TEXT_FONT = "Source Code Pro BOLD 12";
+
+    /**
+     * How long we want it to take for the popups to relocate when one is closed
+     */
+    @Property
+    public static float MOVE_DURATION = 1.0F;
 
     /**
      * Location of the dialog image resources. By default they must be in the 'resources' directory relative to the application
@@ -140,11 +159,12 @@ class Notify {
     private Image graphic;
 
     ActionHandler<Notify> onCloseAction;
-    private NotifyPopup notifyPopup;
+    private INotify notifyPopup;
 
     private String name;
     private int shakeDurationInMillis = 0;
     private int shakeAmplitude = 0;
+    private Window window;
 
     private
     Notify() {
@@ -268,7 +288,7 @@ class Notify {
     }
 
     /**
-     * Shows the notification
+     * Shows the notification. If the Notification is assigned to a screen, but shown in a JFrame, the screen number will be ignored.
      */
     public
     void show() {
@@ -281,12 +301,9 @@ class Notify {
                 final Notify notify = Notify.this;
                 final Image graphic = notify.graphic;
 
-                if (graphic == null) {
-                    notifyPopup = new NotifyPopup(notify, null, null);
-                }
-                else {
-                    // we ONLY cache our own icons
-                    ImageIcon imageIcon;
+                // we ONLY cache our own icons
+                ImageIcon imageIcon = null;
+                if (graphic != null) {
                     if (name != null) {
                         imageIcon = imageIconCache.get(name);
                         if (imageIcon == null) {
@@ -301,8 +318,12 @@ class Notify {
                     else {
                         imageIcon = new ImageIcon(graphic);
                     }
+                }
 
-                    notifyPopup = new NotifyPopup(notify, graphic, imageIcon);
+                if (window == null) {
+                    notifyPopup = new AsFrame(notify, graphic, imageIcon);
+                } else {
+                    notifyPopup = new AsDialog(notify, graphic, imageIcon, window);
                 }
 
                 notifyPopup.setVisible(true);
@@ -312,6 +333,9 @@ class Notify {
                 }
             }
         });
+
+        // don't need to hang onto these.
+        graphic = null;
     }
 
     /**
@@ -369,9 +393,19 @@ class Notify {
         return this;
     }
 
+    /**
+     * Attaches this notification to a specific JFrame/Window, instead of having a global notification
+     */
+    public
+    Notify attach(final Window frame) {
+        this.window = frame;
+        return this;
+    }
+
+
+    // called when this notification is closed.
     void onClose() {
         notifyPopup = null;
-        graphic = null;
     }
 }
 

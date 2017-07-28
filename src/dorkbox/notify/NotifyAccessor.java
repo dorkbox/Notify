@@ -17,19 +17,19 @@ package dorkbox.notify;
 
 import dorkbox.tweenengine.TweenAccessor;
 
-class NotifyPopupAccessor implements TweenAccessor<NotifyPopup> {
+class NotifyAccessor implements TweenAccessor<LookAndFeel> {
 
     static final int Y_POS = 1;
     static final int X_Y_POS = 2;
     static final int PROGRESS = 3;
 
 
-    NotifyPopupAccessor() {
+    NotifyAccessor() {
     }
 
     @Override
     public
-    int getValues(final NotifyPopup target, final int tweenType, final float[] returnValues) {
+    int getValues(final LookAndFeel target, final int tweenType, final float[] returnValues) {
         switch (tweenType) {
             case Y_POS:
                 returnValues[0] = (float) target.getY();
@@ -48,7 +48,7 @@ class NotifyPopupAccessor implements TweenAccessor<NotifyPopup> {
     @SuppressWarnings({"NumericCastThatLosesPrecision", "UnnecessaryReturnStatement"})
     @Override
     public
-    void setValues(final NotifyPopup target, final int tweenType, final float[] newValues) {
+    void setValues(final LookAndFeel target, final int tweenType, final float[] newValues) {
         switch (tweenType) {
             case Y_POS:
                 target.setY((int) newValues[0]);

@@ -15,19 +15,13 @@
  */
 package dorkbox.notify;
 
-import java.awt.event.MouseAdapter;
-import java.awt.event.MouseEvent;
+public
+interface INotify {
+    void close();
 
-class NotifyPopupClickAdapter extends MouseAdapter {
+    void shake(int durationInMillis, int amplitude);
 
-    public
-    NotifyPopupClickAdapter() {
-    }
+    void setVisible(boolean b);
 
-    @Override
-    public
-    void mouseReleased(final MouseEvent e) {
-        NotifyPopup source = (NotifyPopup) e.getSource();
-        source.onClick(e.getX(), e.getY());
-    }
+    void onClick(int x, int y);
 }

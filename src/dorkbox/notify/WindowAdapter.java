@@ -15,22 +15,23 @@
  */
 package dorkbox.notify;
 
-import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
 
-class NotifyPopupWindowAdapter extends WindowAdapter {
+class WindowAdapter extends java.awt.event.WindowAdapter {
+    @Override
     public
     void windowClosing(WindowEvent e) {
         if (e.getNewState() != WindowEvent.WINDOW_CLOSED) {
-            NotifyPopup source = (NotifyPopup) e.getSource();
+            AsFrame source = (AsFrame) e.getSource();
             source.close();
         }
     }
 
+    @Override
     public
     void windowLostFocus(WindowEvent e) {
         if (e.getNewState() != WindowEvent.WINDOW_CLOSED) {
-            NotifyPopup source = (NotifyPopup) e.getSource();
+            AsFrame source = (AsFrame) e.getSource();
             // these don't work
             //toFront();
             //requestFocus();
