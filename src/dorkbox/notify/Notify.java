@@ -87,7 +87,7 @@ class Notify {
      */
     public static
     Version getVersion() {
-        return new Version("2.20");
+        return new Version("3.1");
     }
 
     /**
