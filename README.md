@@ -7,9 +7,9 @@ This small library can display notifications on any screen, in any corner.
 
 Primary Features:
 
-1. Can specify which screen to use for notification
+1. Can specify which screen to use for notification.
 2. Can specify which corner (center is also possible) to use for notification 
-3. If no location is specified, it will show on whatever screen the mouse is on.
+3. If no location is specified, it will show on whatever screen the mouse is on (if a desktop notification)
 4. Duration timeouts, with progress indicator on notification
 5. Light or Dark themes
 6. Can close via close button or clicking on notification body
@@ -17,6 +17,7 @@ Primary Features:
 8. Can register a callback for when a user clicks on the notification body
 9. Animates to a collated position if multiple notifications are in the same position
 10. Bypasses the swing EDT, and now renders at a beautiful 30 frames-per-second.
+11. Can have notifications in an application or on the desktop.
 
 
 - This is for cross-platform use, specifically - linux 32/64, mac 32/64, and windows 32/64. Java 6+
@@ -38,15 +39,15 @@ Notify.IMAGE_PATH    (type String, default value 'resources')
  - Location of the dialog image resources. By default they must be in the 'resources' directory relative to the application
  
  
-NotifyPopup.TITLE_TEXT_FONT    (type String, default value 'Source Code Pro BOLD 16')
+Notify.TITLE_TEXT_FONT    (type String, default value 'Source Code Pro BOLD 16')
  - This is the title font used by a notification.
 
  
-NotifyPopup.MAIN_TEXT_FONT    (type String, default value 'Source Code Pro BOLD 12')
+Notify.MAIN_TEXT_FONT    (type String, default value 'Source Code Pro BOLD 12')
  - This is the main text font used by a notification.
     
  
-NotifyPopup.MOVE_DURATION    (type float, default value '1.0F')
+Notify.MOVE_DURATION    (type float, default value '1.0F')
  - How long we want it to take for the popups to relocate when one is closed
 ```
 
