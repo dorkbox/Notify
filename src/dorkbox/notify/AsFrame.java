@@ -64,7 +64,7 @@ class AsFrame extends JFrame implements INotify {
             Point mouseLocation = MouseInfo.getPointerInfo()
                                            .getLocation();
 
-            device = ScreenUtil.getGraphicsDeviceAt(mouseLocation);
+            device = ScreenUtil.getMonitorAtLocation(mouseLocation);
         }
         else {
             // set screen position based on specified screen
