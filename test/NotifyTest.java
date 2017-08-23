@@ -64,7 +64,8 @@ class NotifyTest {
                            .text("This is a notification " + i + " popup message This is a notification popup message This is a " +
                                  "notification popup message")
                            .hideAfter(13000)
-                           .position(Pos.CENTER)
+                           .position(Pos.BOTTOM_RIGHT)
+                           // .position(Pos.CENTER)
                       // .setScreen(0)
                            .darkStyle()
                            // .shake(1300, 4)
@@ -93,7 +94,7 @@ class NotifyTest {
                            .title("Notify title " + i)
                            .text("This is a notification " + i + " popup message This is a notification popup message This is a " +
                                  "notification popup message")
-                           .hideAfter(13000)
+                           .hideAfter(3000)
                            .position(Pos.TOP_RIGHT)
 //                       .setScreen(0)
                            .darkStyle()

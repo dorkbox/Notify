@@ -15,7 +15,7 @@
  */
 package dorkbox.notify;
 
-import java.awt.Graphics;
+import java.awt.Dimension;
 import java.awt.GraphicsDevice;
 import java.awt.GraphicsEnvironment;
 import java.awt.Image;
@@ -42,15 +42,19 @@ class AsFrame extends JFrame implements INotify {
 
     // this is on the swing EDT
     @SuppressWarnings("NumericCastThatLosesPrecision")
-    AsFrame(final Notify notification, final Image image, final ImageIcon imageIcon) {
+    AsFrame(final Notify notification, final Image image, final ImageIcon imageIcon, final Theme theme) {
         this.notification = notification;
 
         setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
         setUndecorated(true);
         setAlwaysOnTop(true);
-        setLayout(null);
+        // setLayout(null);
 
-        setSize(LookAndFeel.WIDTH, LookAndFeel.HEIGHT);
+        final Dimension preferredSize = new Dimension(WIDTH, HEIGHT);
+        setPreferredSize(preferredSize);
+        setMaximumSize(preferredSize);
+        setMinimumSize(preferredSize);
+        setSize(NotifyCanvas.WIDTH, NotifyCanvas.HEIGHT);
         setLocation(Short.MIN_VALUE, Short.MIN_VALUE);
 
         setTitle(notification.title);
@@ -85,13 +89,11 @@ class AsFrame extends JFrame implements INotify {
         bounds = device.getDefaultConfiguration()
                        .getBounds();
 
-        look = new LookAndFeel(this, notification, image, imageIcon, bounds);
-    }
 
-    @Override
-    public
-    void paint(Graphics g) {
-        look.paint(g);
+        NotifyCanvas notifyCanvas = new NotifyCanvas(notification, imageIcon, theme);
+        getContentPane().add(notifyCanvas);
+
+        look = new LookAndFeel(this, notifyCanvas, notification, image, bounds);
     }
 
     @Override
@@ -114,15 +116,24 @@ class AsFrame extends JFrame implements INotify {
 
     @Override
     public
-    void setVisible(final boolean b) {
+    void setVisible(final boolean visible) {
         // was it already visible?
-        if (b == isVisible()) {
+        if (visible == isVisible()) {
             // prevent "double setting" visible state
             return;
         }
 
-        super.setVisible(b);
-        look.setVisible(b);
+        // this is because the order of operations are different based upon visibility.
+        look.updatePositionsPre(visible);
+
+        super.setVisible(visible);
+
+        // this is because the order of operations are different based upon visibility.
+        look.updatePositionsPost(visible);
+
+        if (visible) {
+            this.toFront();
+        }
     }
 
     @Override

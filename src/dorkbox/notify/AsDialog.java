@@ -16,8 +16,8 @@
 package dorkbox.notify;
 
 import java.awt.Dialog;
+import java.awt.Dimension;
 import java.awt.Frame;
-import java.awt.Graphics;
 import java.awt.Image;
 import java.awt.Window;
 import java.awt.event.ComponentEvent;
@@ -43,22 +43,29 @@ class AsDialog extends JDialog implements INotify {
 
     // this is on the swing EDT
     @SuppressWarnings("NumericCastThatLosesPrecision")
-    AsDialog(final Notify notification, final Image image, final ImageIcon imageIcon, final Window container) {
+    AsDialog(final Notify notification, final Image image, final ImageIcon imageIcon, final Window container, final Theme theme) {
         super(container, Dialog.ModalityType.MODELESS);
         this.notification = notification;
 
         setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
         setUndecorated(true);
-        setLayout(null);
 
-        setSize(LookAndFeel.WIDTH, LookAndFeel.HEIGHT);
+        final Dimension preferredSize = new Dimension(WIDTH, HEIGHT);
+        setPreferredSize(preferredSize);
+        setMaximumSize(preferredSize);
+        setMinimumSize(preferredSize);
+        setSize(NotifyCanvas.WIDTH, NotifyCanvas.HEIGHT);
         setLocation(Short.MIN_VALUE, Short.MIN_VALUE);
 
         setTitle(notification.title);
         setResizable(false);
 
-        look = new LookAndFeel(this, notification, image, imageIcon, container.getBounds());
+        NotifyCanvas notifyCanvas = new NotifyCanvas(notification, imageIcon, theme);
+        add(notifyCanvas);
 
+        look = new LookAndFeel(this, notifyCanvas, notification, image, container.getBounds());
+
+        // this makes sure that our dialogs follow the parent window (if it's hidden/shown/moved/etc)
         parentListener = new ComponentListener() {
             @Override
             public
@@ -106,12 +113,6 @@ class AsDialog extends JDialog implements INotify {
 
     @Override
     public
-    void paint(Graphics g) {
-        look.paint(g);
-    }
-
-    @Override
-    public
     void onClick(final int x, final int y) {
         look.onClick(x, y);
     }
@@ -130,15 +131,20 @@ class AsDialog extends JDialog implements INotify {
 
     @Override
     public
-    void setVisible(final boolean b) {
+    void setVisible(final boolean visible) {
         // was it already visible?
-        if (b == isVisible()) {
+        if (visible == isVisible()) {
             // prevent "double setting" visible state
             return;
         }
 
-        super.setVisible(b);
-        look.setVisible(b);
+        // this is because the order of operations are different based upon visibility.
+        look.updatePositionsPre(visible);
+
+        super.setVisible(visible);
+
+        // this is because the order of operations are different based upon visibility.
+        look.updatePositionsPost(visible);
     }
 
     @Override

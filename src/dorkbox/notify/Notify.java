@@ -150,6 +150,8 @@ class Notify {
     String title;
     String text;
 
+    Theme theme;
+
     Pos position = Pos.BOTTOM_RIGHT;
     int hideAfterDurationInMillis = 0;
 
@@ -239,6 +241,15 @@ class Notify {
     }
 
     /**
+     * Specifies what the theme should be, if other than the default. This will always take precedence over the defaults.
+     */
+    public
+    Notify text(Theme theme) {
+        this.theme = theme;
+        return this;
+    }
+
+    /**
      * Specify that the close button in the top-right corner of the notification should not be shown.
      */
     public
@@ -320,10 +331,18 @@ class Notify {
                     }
                 }
 
-                if (window == null) {
-                    notifyPopup = new AsFrame(notify, graphic, imageIcon);
+                Theme theme;
+                if (notify.theme != null) {
+                    // use custom theme.
+                    theme = notify.theme;
                 } else {
-                    notifyPopup = new AsDialog(notify, graphic, imageIcon, window);
+                    theme = new Theme(Notify.TITLE_TEXT_FONT, Notify.MAIN_TEXT_FONT, notify.isDark);
+                }
+
+                if (window == null) {
+                    notifyPopup = new AsFrame(notify, graphic, imageIcon, theme);
+                } else {
+                    notifyPopup = new AsDialog(notify, graphic, imageIcon, window, theme);
                 }
 
                 notifyPopup.setVisible(true);

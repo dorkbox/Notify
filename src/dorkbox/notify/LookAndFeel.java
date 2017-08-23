@@ -15,35 +15,23 @@
  */
 package dorkbox.notify;
 
-import java.awt.BasicStroke;
-import java.awt.Color;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
 import java.awt.Image;
-import java.awt.Point;
 import java.awt.Rectangle;
-import java.awt.RenderingHints;
-import java.awt.Stroke;
 import java.awt.Window;
 import java.awt.event.MouseAdapter;
-import java.awt.image.BufferedImage;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Random;
 
-import javax.swing.ImageIcon;
-import javax.swing.JLabel;
-
 import dorkbox.tweenengine.BaseTween;
 import dorkbox.tweenengine.Tween;
 import dorkbox.tweenengine.TweenCallback;
+import dorkbox.tweenengine.TweenEngine;
 import dorkbox.tweenengine.TweenEquations;
-import dorkbox.tweenengine.TweenManager;
 import dorkbox.util.ActionHandler;
 import dorkbox.util.ActionHandlerLong;
-import dorkbox.util.FontUtil;
 import dorkbox.util.SwingUtil;
 import dorkbox.util.swing.SwingActiveRender;
 
@@ -51,33 +39,12 @@ import dorkbox.util.swing.SwingActiveRender;
 class LookAndFeel {
     private static final Map<String, ArrayList<LookAndFeel>> popups = new HashMap<String, ArrayList<LookAndFeel>>();
 
+    static final TweenEngine animation = TweenEngine.create()
+                                                    .unsafe()  // access is only from a single thread ever, so unsafe is preferred.
+                                                    .build();
+
     static final NotifyAccessor accessor = new NotifyAccessor();
-    static final TweenManager tweenManager = new TweenManager();
     private static final ActionHandlerLong frameStartHandler;
-
-
-
-    private static final java.awt.event.WindowAdapter windowListener = new WindowAdapter();
-    private static final MouseAdapter mouseListener = new ClickAdapter();
-
-    private static final Stroke stroke = new BasicStroke(2);
-    private static final int closeX = 282;
-    private static final int closeY = 2;
-
-    private static final int Y_1 = closeY + 5;
-    private static final int X_1 = closeX + 5;
-    private static final int Y_2 = closeY + 11;
-    private static final int X_2 = closeX + 11;
-
-    static final int WIDTH = 300;
-    static final int HEIGHT = 87;
-    private static final int PROGRESS_HEIGHT = HEIGHT - 2;
-
-    private static final int PADDING = 40;
-
-    private static final Random RANDOM = new Random();
-
-    private static final float MOVE_DURATION = Notify.MOVE_DURATION;
 
     static {
         // this is for updating the tween engine during active-rendering
@@ -85,24 +52,29 @@ class LookAndFeel {
             @Override
             public
             void handle(final long deltaInNanos) {
-                LookAndFeel.tweenManager.update(deltaInNanos);
+                LookAndFeel.animation.update(deltaInNanos);
             }
         };
     }
 
+
+    private static final int PADDING = 40;
+
+    private static final java.awt.event.WindowAdapter windowListener = new WindowAdapter();
+    private static final MouseAdapter mouseListener = new ClickAdapter();
+
+    private static final Random RANDOM = new Random();
+
+    private static final float MOVE_DURATION = Notify.MOVE_DURATION;
+
+
+
     private volatile int anchorX;
     private volatile int anchorY;
 
-    private final Color panel_BG;
-    private final Color titleText_FG;
-    private final Color mainText_FG;
-    private final Color closeX_FG;
-    private final Color progress_FG;
-
-    private final boolean showCloseButton;
-    private final BufferedImage cachedImage;
 
     private final Window parent;
+    private final NotifyCanvas notifyCanvas;
 
     private final float hideAfterDurationInSeconds;
     private final Pos position;
@@ -114,41 +86,23 @@ class LookAndFeel {
     private volatile Tween tween = null;
     private volatile Tween hideTween = null;
 
-    // for the progress bar. we directly draw this onscreen
-    // non-volatile because it's always accessed in the active render thread
-    private int progress = 0;
-
     private final ActionHandler<Notify> onCloseAction;
 
-    LookAndFeel(final Window parent, final Notify notification, final Image image, final ImageIcon imageIcon, final Rectangle parentBounds) {
+    LookAndFeel(final Window parent,
+                final NotifyCanvas notifyCanvas,
+                final Notify notification,
+                final Image image,
+                final Rectangle parentBounds) {
+
         this.parent = parent;
+        this.notifyCanvas = notifyCanvas;
+
 
         parent.addWindowListener(windowListener);
         parent.addMouseListener(mouseListener);
 
-        if (notification.isDark) {
-            panel_BG = Color.DARK_GRAY;
-            titleText_FG = Color.GRAY;
-            mainText_FG = Color.LIGHT_GRAY;
-            closeX_FG = Color.GRAY;
-            progress_FG = Color.gray;
-        }
-        else {
-            panel_BG = Color.WHITE;
-            titleText_FG = Color.GRAY.darker();
-            mainText_FG = Color.GRAY;
-            closeX_FG = Color.LIGHT_GRAY;
-            progress_FG = new Color(0x42A5F5);
-        }
-
         hideAfterDurationInSeconds = notification.hideAfterDurationInMillis / 1000.0F;
         position = notification.position;
-
-        showCloseButton = !notification.hideCloseButton;
-
-        // now we setup the rendering of the image
-        cachedImage = renderBackgroundInfo(notification.title, notification.text, titleText_FG, mainText_FG, panel_BG, imageIcon);
-
 
         if (notification.onCloseAction != null) {
             onCloseAction = new ActionHandler<Notify>() {
@@ -168,7 +122,6 @@ class LookAndFeel {
         anchorX = getAnchorX(position, parentBounds);
         anchorY = getAnchorY(position, parentBounds);
 
-        parent.setBackground(panel_BG);
         if (image != null) {
             parent.setIconImage(image);
         }
@@ -177,61 +130,10 @@ class LookAndFeel {
         }
     }
 
-    void paint(final Graphics g) {
-        // we cache the text + image (to another image), and then always render the close + progressbar
-
-        // use our cached image, so we don't have to re-render text/background/etc
-        g.drawImage(cachedImage, 0, 0, null);
-
-        // the progress bar and close button are the only things that can change, so we always draw them every time
-        Graphics2D g2 = (Graphics2D) g.create();
-        try {
-            if (showCloseButton) {
-                Graphics2D g3 = (Graphics2D) g.create();
-
-                g3.setColor(panel_BG);
-                g3.setStroke(stroke);
-
-                final Point p = parent.getMousePosition();
-                // reasonable position for detecting mouse over
-                if (p != null && p.getX() >= 280 && p.getY() <= 20) {
-                    g3.setColor(Color.RED);
-                }
-                else {
-                    g3.setColor(closeX_FG);
-                }
-
-                // draw the X
-                g3.drawLine(X_1, Y_1, X_2, Y_2);
-                g3.drawLine(X_2, Y_1, X_1, Y_2);
-            }
-
-            g2.setColor(progress_FG);
-            g2.fillRect(0, PROGRESS_HEIGHT, progress, 2);
-        } finally {
-            g2.dispose();
-        }
-    }
-
-    void close() {
-        if (hideTween != null) {
-            hideTween.cancel();
-            hideTween = null;
-        }
-
-        if (tween != null) {
-            tween.cancel();
-            tween = null;
-        }
-
-        parent.removeWindowListener(windowListener);
-        parent.removeMouseListener(mouseListener);
-    }
-
     void onClick(final int x, final int y) {
         // Check - we were over the 'X' (and thus no notify), or was it in the general area?
 
-        if (showCloseButton && x >= 280 && y <= 20) {
+        if (notifyCanvas.isCloseButton(x, y)) {
             // reasonable position for detecting mouse over
             ((INotify)parent).close();
         }
@@ -257,13 +159,28 @@ class LookAndFeel {
 
         int changedY;
         if (showFromTop) {
-            changedY = anchorY + (popupIndex * (HEIGHT + 10));
+            changedY = anchorY + (popupIndex * (NotifyCanvas.HEIGHT + 10));
         }
         else {
-            changedY = anchorY - (popupIndex * (HEIGHT + 10));
+            changedY = anchorY - (popupIndex * (NotifyCanvas.HEIGHT + 10));
         }
 
         parent.setLocation(anchorX, changedY);
+    }
+
+    void close() {
+        if (hideTween != null) {
+            hideTween.cancel();
+            hideTween = null;
+        }
+
+        if (tween != null) {
+            tween.cancel();
+            tween = null;
+        }
+
+        parent.removeWindowListener(windowListener);
+        parent.removeMouseListener(mouseListener);
     }
 
     void shake(final int durationInMillis, final int amplitude) {
@@ -294,45 +211,23 @@ class LookAndFeel {
             count++;
         }
 
-        Tween tween = Tween.to(this, NotifyAccessor.X_Y_POS, accessor, 0.05F)
-                           .targetRelative(i1, i2)
-                           .repeatAutoReverse(count, 0)
-                           .ease(TweenEquations.Linear);
-        tweenManager.add(tween);
+        animation.to(this, NotifyAccessor.X_Y_POS, accessor, 0.05F)
+                 .targetRelative(i1, i2)
+                 .repeatAutoReverse(count, 0)
+                 .ease(TweenEquations.Linear)
+                 .start();
     }
 
-    void setY(final int y) {
+    void setParentY(final int y) {
         parent.setLocation(parent.getX(), y);
     }
 
-    void setProgress(final int progress) {
-        this.progress = progress;
-    }
-
-    int getProgress() {
-        return progress;
-    }
-
-    int getY() {
+    int getParentY() {
         return parent.getY();
     }
 
-    int getX() {
+    int getParentX() {
         return parent.getX();
-    }
-
-    void setVisible(final boolean visible) {
-        if (visible) {
-            parent.toFront();
-
-            // set this jframe to use active rendering
-            SwingActiveRender.addActiveRender(parent);
-            addPopupToMap(this);
-        }
-        else {
-            removePopupFromMap(this);
-            SwingActiveRender.removeActiveRender(parent);
-        }
     }
 
     private static
@@ -349,11 +244,11 @@ class LookAndFeel {
                 return startX + PADDING;
 
             case CENTER:
-                return startX + (screenWidth / 2) - WIDTH / 2 - PADDING / 2;
+                return startX + (screenWidth / 2) - NotifyCanvas.WIDTH / 2 - PADDING / 2;
 
             case TOP_RIGHT:
             case BOTTOM_RIGHT:
-                return startX + screenWidth - WIDTH - PADDING;
+                return startX + screenWidth - NotifyCanvas.WIDTH - PADDING;
 
             default:
                 throw new RuntimeException("Unknown position. '" + position + "'");
@@ -372,98 +267,21 @@ class LookAndFeel {
                 return PADDING + startY;
 
             case CENTER:
-                return startY + (screenHeight / 2) - HEIGHT / 2 - PADDING / 2;
+                return startY + (screenHeight / 2) - NotifyCanvas.HEIGHT / 2 - PADDING / 2;
 
             case BOTTOM_LEFT:
             case BOTTOM_RIGHT:
-                return startY + screenHeight - HEIGHT - PADDING;
+                return startY + screenHeight - NotifyCanvas.HEIGHT - PADDING;
 
             default:
                 throw new RuntimeException("Unknown position. '" + position + "'");
         }
     }
 
-    private static
-    BufferedImage renderBackgroundInfo(final String title,
-                                       final String notificationText,
-                                       final Color titleText_FG,
-                                       final Color mainText_FG,
-                                       final Color panel_BG,
-                                       final ImageIcon imageIcon) {
-
-        BufferedImage image = new BufferedImage(WIDTH, HEIGHT, BufferedImage.TYPE_INT_ARGB);
-        Graphics2D g2 = image.createGraphics();
-        g2.setRenderingHint(RenderingHints.KEY_ALPHA_INTERPOLATION, RenderingHints.VALUE_ALPHA_INTERPOLATION_QUALITY);
-        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        g2.setRenderingHint(RenderingHints.KEY_COLOR_RENDERING, RenderingHints.VALUE_COLOR_RENDER_QUALITY);
-        g2.setRenderingHint(RenderingHints.KEY_DITHERING, RenderingHints.VALUE_DITHER_ENABLE);
-        g2.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_ON);
-        g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
-        g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
-        g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
-
-        try {
-            g2.setColor(panel_BG);
-            g2.fillRect(0, 0, WIDTH, HEIGHT);
-
-            // Draw the title text
-            java.awt.Font titleTextFont = FontUtil.parseFont(Notify.TITLE_TEXT_FONT);
-            g2.setColor(titleText_FG);
-            g2.setFont(titleTextFont);
-            g2.drawString(title, 5, 20);
-
-
-            int posX = 10;
-            int posY = -8;
-            int textLengthLimit = 108;
-
-            // ICON
-            if (imageIcon != null) {
-                textLengthLimit = 88;
-                posX = 60;
-                // Draw the image
-                imageIcon.paintIcon(null, g2, 5, 30);
-            }
-
-            // Draw the main text
-            java.awt.Font mainTextFont = FontUtil.parseFont(Notify.MAIN_TEXT_FONT);
-            int length = notificationText.length();
-            StringBuilder text = new StringBuilder(length);
-
-            // are we "html" already? just check for the starting tag and strip off END html tag
-            if (length >= 13 && notificationText.regionMatches(true, length - 7, "</html>", 0, 7)) {
-                text.append(notificationText);
-                text.delete(text.length() - 7, text.length());
-
-                length -= 7;
-            }
-            else {
-                text.append("<html>");
-                text.append(notificationText);
-            }
-
-            // make sure the text is the correct length
-            if (length > textLengthLimit) {
-                text.delete(6 + textLengthLimit, text.length());
-                text.append("...");
-            }
-            text.append("</html>");
-
-            JLabel mainTextLabel = new JLabel();
-            mainTextLabel.setForeground(mainText_FG);
-            mainTextLabel.setFont(mainTextFont);
-            mainTextLabel.setText(text.toString());
-            mainTextLabel.setBounds(0, 0, WIDTH - posX - 2, HEIGHT);
-
-            g2.translate(posX, posY);
-            mainTextLabel.paint(g2);
-            g2.translate(-posX, -posY);
-        } finally {
-            g2.dispose();
-        }
-
-        return image;
+    void setParentLocation(final int x, final int y) {
+        parent.setLocation(x, y);
     }
+
 
     // only called on the swing EDT thread
     private static
@@ -486,48 +304,37 @@ class LookAndFeel {
             int anchorY = sourceLook.anchorY;
 
             if (isShowFromTop(sourceLook)) {
-                targetY = anchorY + (popupIndex * (HEIGHT + 10));
+                targetY = anchorY + (popupIndex * (NotifyCanvas.HEIGHT + 10));
             }
             else {
-                targetY = anchorY - (popupIndex * (HEIGHT + 10));
+                targetY = anchorY - (popupIndex * (NotifyCanvas.HEIGHT + 10));
             }
 
             looks.add(sourceLook);
-            sourceLook.setLocation(anchorX, targetY);
+            sourceLook.setParentLocation(anchorX, targetY);
 
             if (sourceLook.hideAfterDurationInSeconds > 0 && sourceLook.hideTween == null) {
                 // begin a timeline to get rid of the popup (default is 5 seconds)
-                Tween hideTween = Tween.to(sourceLook, NotifyAccessor.PROGRESS, accessor, sourceLook.hideAfterDurationInSeconds)
-                                       .target(WIDTH)
-                                       .ease(TweenEquations.Linear)
-                                       .addCallback(new TweenCallback() {
-                                           @Override
-                                           public
-                                           void onEvent(final int type, final BaseTween<?> source) {
-                                               if (type == Events.COMPLETE) {
-                                                   ((INotify)sourceLook.parent).close();
-                                               }
-                                           }
-                                       });
-                tweenManager.add(hideTween);
+                animation.to(sourceLook, NotifyAccessor.PROGRESS, accessor, sourceLook.hideAfterDurationInSeconds)
+                         .target(NotifyCanvas.WIDTH)
+                         .ease(TweenEquations.Linear)
+                         .addCallback(new TweenCallback() {
+                            @Override
+                            public
+                            void onEvent(final int type, final BaseTween<?> source) {
+                                if (type == Events.COMPLETE) {
+                                    ((INotify) sourceLook.parent).close();
+                                }
+                            }
+                        })
+                         .start();
             }
         }
-
-        // start if we have stopped the timer
-        if (!SwingActiveRender.containsActiveRenderFrameStart(frameStartHandler)) {
-            tweenManager.resetUpdateTime();
-            SwingActiveRender.addActiveRenderFrameStart(frameStartHandler);
-        }
     }
-
-    void setLocation(final int x, final int y) {
-        parent.setLocation(x, y);
-    }
-
 
     // only called on the swing app or SwingActiveRender thread
     private static
-    void removePopupFromMap(final LookAndFeel sourceLook) {
+    boolean removePopupFromMap(final LookAndFeel sourceLook) {
         boolean showFromTop = isShowFromTop(sourceLook);
         boolean popupsAreEmpty;
 
@@ -565,41 +372,31 @@ class LookAndFeel {
                 // popups at TOP grow down, popups at BOTTOM grow up
                 int changedY;
                 if (showFromTop) {
-                    changedY = look.anchorY + (look.popupIndex * (HEIGHT + 10));
+                    changedY = look.anchorY + (look.popupIndex * (NotifyCanvas.HEIGHT + 10));
                 }
                 else {
-                    changedY = look.anchorY - (look.popupIndex * (HEIGHT + 10));
+                    changedY = look.anchorY - (look.popupIndex * (NotifyCanvas.HEIGHT + 10));
                 }
 
                 // now animate that popup to it's new location
-                Tween tween = Tween.to(look, NotifyAccessor.Y_POS, accessor, MOVE_DURATION)
-                                   .target((float) changedY)
-                                   .ease(TweenEquations.Linear)
-                                   .addCallback(new TweenCallback() {
-                                       @Override
-                                       public
-                                       void onEvent(final int type, final BaseTween<?> source) {
-                                           if (type == Events.COMPLETE) {
-                                               // make sure to remove the tween once it's done, otherwise .kill can do weird things.
-                                               look.tween = null;
-                                           }
-                                       }
-                                   });
-
-                look.tween = tween;
-                tweenManager.add(tween);
+                look.tween = animation.to(look, NotifyAccessor.Y_POS, accessor, MOVE_DURATION)
+                                      .target((float) changedY)
+                                      .ease(TweenEquations.Linear)
+                                      .addCallback(new TweenCallback() {
+                                         @Override
+                                         public
+                                         void onEvent(final int type, final BaseTween<?> source) {
+                                             if (type == Events.COMPLETE) {
+                                                 // make sure to remove the tween once it's done, otherwise .kill can do weird things.
+                                                 look.tween = null;
+                                             }
+                                         }
+                                     })
+                                      .start();
             }
         }
 
-        // if there's nothing left, stop the timer.
-        if (popupsAreEmpty) {
-            SwingActiveRender.removeActiveRenderFrameStart(frameStartHandler);
-        }
-        // start if we have previously stopped the timer
-        else if (!SwingActiveRender.containsActiveRenderFrameStart(frameStartHandler)) {
-            tweenManager.resetUpdateTime();
-            SwingActiveRender.addActiveRenderFrameStart(frameStartHandler);
-        }
+        return popupsAreEmpty;
     }
 
     private static
@@ -611,6 +408,47 @@ class LookAndFeel {
                 return true;
             default:
                 return false;
+        }
+    }
+
+    void setProgress(final int progress) {
+        notifyCanvas.setProgress(progress);
+    }
+
+    int getProgress() {
+        return notifyCanvas.getProgress();
+    }
+
+    /**
+     * we have to remove the active renderer BEFORE we set the visibility status.
+     */
+    void updatePositionsPre(final boolean visible) {
+        if (!visible) {
+            boolean popupsAreEmpty = LookAndFeel.removePopupFromMap(this);
+            SwingActiveRender.removeActiveRender(notifyCanvas);
+
+            if (popupsAreEmpty) {
+                // if there's nothing left, stop the timer.
+                SwingActiveRender.removeActiveRenderFrameStart(frameStartHandler);
+            }
+        }
+    }
+
+    /**
+     * when using active rendering, we have to add it AFTER we have set the visibility status
+     */
+    void updatePositionsPost(final boolean visible) {
+        if (visible) {
+
+            SwingActiveRender.addActiveRender(notifyCanvas);
+
+            // start if we have previously stopped the timer
+            if (!SwingActiveRender.containsActiveRenderFrameStart(frameStartHandler)) {
+                LookAndFeel.animation.resetUpdateTime();
+                SwingActiveRender.addActiveRenderFrameStart(frameStartHandler);
+            }
+
+            LookAndFeel.addPopupToMap(this);
         }
     }
 }
