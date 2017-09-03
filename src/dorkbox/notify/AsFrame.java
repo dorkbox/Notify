@@ -18,7 +18,6 @@ package dorkbox.notify;
 import java.awt.Dimension;
 import java.awt.GraphicsDevice;
 import java.awt.GraphicsEnvironment;
-import java.awt.Image;
 import java.awt.MouseInfo;
 import java.awt.Point;
 import java.awt.Rectangle;
@@ -42,7 +41,7 @@ class AsFrame extends JFrame implements INotify {
 
     // this is on the swing EDT
     @SuppressWarnings("NumericCastThatLosesPrecision")
-    AsFrame(final Notify notification, final Image image, final ImageIcon imageIcon, final Theme theme) {
+    AsFrame(final Notify notification, final ImageIcon image, final Theme theme) {
         this.notification = notification;
 
         setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
@@ -90,7 +89,7 @@ class AsFrame extends JFrame implements INotify {
                        .getBounds();
 
 
-        NotifyCanvas notifyCanvas = new NotifyCanvas(notification, imageIcon, theme);
+        NotifyCanvas notifyCanvas = new NotifyCanvas(notification, image, theme);
         getContentPane().add(notifyCanvas);
 
         look = new LookAndFeel(this, notifyCanvas, notification, image, bounds);

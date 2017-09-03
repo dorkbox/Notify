@@ -15,7 +15,6 @@
  */
 package dorkbox.notify;
 
-import java.awt.Image;
 import java.awt.Rectangle;
 import java.awt.Window;
 import java.awt.event.MouseAdapter;
@@ -24,6 +23,8 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Random;
+
+import javax.swing.ImageIcon;
 
 import dorkbox.tweenengine.BaseTween;
 import dorkbox.tweenengine.Tween;
@@ -91,7 +92,7 @@ class LookAndFeel {
     LookAndFeel(final Window parent,
                 final NotifyCanvas notifyCanvas,
                 final Notify notification,
-                final Image image,
+                final ImageIcon image,
                 final Rectangle parentBounds) {
 
         this.parent = parent;
@@ -123,7 +124,7 @@ class LookAndFeel {
         anchorY = getAnchorY(position, parentBounds);
 
         if (image != null) {
-            parent.setIconImage(image);
+            parent.setIconImage(image.getImage());
         }
         else {
             parent.setIconImage(SwingUtil.BLANK_ICON);

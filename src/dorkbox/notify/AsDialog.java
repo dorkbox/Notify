@@ -18,7 +18,6 @@ package dorkbox.notify;
 import java.awt.Dialog;
 import java.awt.Dimension;
 import java.awt.Frame;
-import java.awt.Image;
 import java.awt.Window;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
@@ -43,7 +42,7 @@ class AsDialog extends JDialog implements INotify {
 
     // this is on the swing EDT
     @SuppressWarnings("NumericCastThatLosesPrecision")
-    AsDialog(final Notify notification, final Image image, final ImageIcon imageIcon, final Window container, final Theme theme) {
+    AsDialog(final Notify notification, final ImageIcon image, final Window container, final Theme theme) {
         super(container, Dialog.ModalityType.MODELESS);
         this.notification = notification;
 
@@ -60,7 +59,7 @@ class AsDialog extends JDialog implements INotify {
         setTitle(notification.title);
         setResizable(false);
 
-        NotifyCanvas notifyCanvas = new NotifyCanvas(notification, imageIcon, theme);
+        NotifyCanvas notifyCanvas = new NotifyCanvas(notification, image, theme);
         add(notifyCanvas);
 
         look = new LookAndFeel(this, notifyCanvas, notification, image, container.getBounds());

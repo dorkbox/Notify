@@ -21,6 +21,7 @@ import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.ref.SoftReference;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -28,6 +29,7 @@ import javax.imageio.ImageIO;
 import javax.swing.ImageIcon;
 
 import dorkbox.util.ActionHandler;
+import dorkbox.util.ImageUtil;
 import dorkbox.util.LocationResolver;
 import dorkbox.util.Property;
 import dorkbox.util.SwingUtil;
@@ -55,6 +57,12 @@ import dorkbox.util.Version;
 public final
 class Notify {
 
+    public static final String DIALOG_CONFIRM = "dialog-confirm.png";
+
+    public static final String DIALOG_INFORMATION = "dialog-information.png";
+    public static final String DIALOG_WARNING = "dialog-warning.png";
+    public static final String DIALOG_ERROR = "dialog-error.png";
+
     /**
      * This is the title font used by a notification.
      */
@@ -79,8 +87,7 @@ class Notify {
     @Property
     public static String IMAGE_PATH = "resources";
 
-    private static Map<String, BufferedImage> imageCache = new HashMap<String, BufferedImage>(4);
-    private static Map<String, ImageIcon> imageIconCache = new HashMap<String, ImageIcon>(4);
+    private static Map<String, SoftReference<ImageIcon>> imageCache = new HashMap<String, SoftReference<ImageIcon>>(4);
 
     /**
      * Gets the version number.
@@ -99,37 +106,68 @@ class Notify {
     }
 
     /**
+     * Gets the size of the image to be used in the notification, which is a 48x48 pixel image.
+     */
+    public static
+    int getImageSize() {
+        return 48;
+    }
+
+    /**
      * Permits one to override the default images for the dialogs. This is NOT thread safe, and must be performed BEFORE showing a
      * notification.
      * <p>
      * The image names are as follows:
      * <p>
-     * 'dialog-confirm.png' 'dialog-error.png' 'dialog-information.png' 'dialog-warning.png'
+     * 'Notify.DIALOG_CONFIRM' 'Notify.DIALOG_INFORMATION' 'Notify.DIALOG_WARNING' 'Notify.DIALOG_ERROR'
      *
      * @param imageName  the name of the image, either your own if you want want it cached, or one of the above.
      * @param image  the BufferedImage that you want to cache.
      */
     public static
-    void setImagePath(String imageName, BufferedImage image) {
+    void overrideDefaultImage(String imageName, BufferedImage image) {
         if (imageCache.containsKey(imageName)) {
             throw new RuntimeException("Unable to set an image that already has been set. This action must be done as soon as possible.");
         }
 
-        imageCache.put(imageName, image);
+        Image imageImmediate = ImageUtil.getImageImmediate(image);
+
+        // we only use 48x48 pixel images. Resize as necessary
+        int width = imageImmediate.getWidth(null);
+        int height = imageImmediate.getHeight(null);
+
+        BufferedImage bufferedImage;
+
+        // resize the image, keep aspect ratio
+        if (width > height) {
+            bufferedImage = ImageUtil.resizeImage(image, getImageSize(), -1);
+        }
+        else {
+            bufferedImage = ImageUtil.resizeImage(image, -1, getImageSize());
+        }
+
+        imageCache.put(imageName, new SoftReference<ImageIcon>(new ImageIcon(bufferedImage)));
     }
 
     private static
-    BufferedImage getImage(String imageName) {
-        BufferedImage bufferedImage = imageCache.get(imageName);
+    ImageIcon getImage(String imageName) {
+        ImageIcon image = null;
         InputStream resourceAsStream = null;
+
         try {
-            if (bufferedImage == null) {
+            SoftReference<ImageIcon> reference = imageCache.get(imageName);
+
+            if (reference != null) {
+                image = reference.get();
+            }
+
+            if (image == null) {
                 String name = IMAGE_PATH + File.separatorChar + imageName;
 
                 resourceAsStream = LocationResolver.getResourceAsStream(name);
 
-                bufferedImage = ImageIO.read(resourceAsStream);
-                imageCache.put(imageName, bufferedImage);
+                image = new ImageIcon(ImageUtil.getImageImmediate(ImageIO.read(resourceAsStream)));
+                imageCache.put(imageName, new SoftReference<ImageIcon>(image));
             }
         } catch (IOException e) {
             e.printStackTrace();
@@ -143,7 +181,7 @@ class Notify {
             }
         }
 
-        return bufferedImage;
+        return image;
     }
 
 
@@ -158,7 +196,7 @@ class Notify {
     boolean hideCloseButton;
     boolean isDark = false;
     int screenNumber = Short.MIN_VALUE;
-    private Image graphic;
+    private ImageIcon icon;
 
     ActionHandler<Notify> onCloseAction;
     private INotify notifyPopup;
@@ -191,11 +229,24 @@ class Notify {
     }
 
     /**
-     * Specifies the graphic
+     * Specifies the image
      */
     public
-    Notify graphic(Image graphic) {
-        this.graphic = graphic;
+    Notify image(Image image) {
+        // we only use 48x48 pixel images. Resize as necessary
+        int width = image.getWidth(null);
+        int height = image.getHeight(null);
+
+        BufferedImage bufferedImage = ImageUtil.getBufferedImage(image);
+
+        // resize the image, keep aspect ratio
+        if (width > height) {
+            bufferedImage = ImageUtil.resizeImage(bufferedImage, 48, -1);
+        } else {
+            bufferedImage = ImageUtil.resizeImage(bufferedImage, -1, 48);
+        }
+
+        this.icon = new ImageIcon(bufferedImage);
         return this;
     }
 
@@ -259,47 +310,48 @@ class Notify {
     }
 
     /**
-     * Shows the notification with the built-in 'warning' graphic.
+     * Shows the notification with the built-in 'warning' image.
      */
     public
     void showWarning() {
-        name = "dialog-warning.png";
-        graphic(getImage(name));
+        name = DIALOG_WARNING;
+        icon = getImage(name);
         show();
     }
 
     /**
-     * Shows the notification with the built-in 'information' graphic.
+     * Shows the notification with the built-in 'information' image.
      */
     public
     void showInformation() {
-        name = "dialog-information.png";
-        graphic(getImage(name));
+        name = DIALOG_INFORMATION;
+        icon = getImage(name);
         show();
     }
 
     /**
-     * Shows the notification with the built-in 'error' graphic.
+     * Shows the notification with the built-in 'error' image.
      */
     public
     void showError() {
-        name = "dialog-error.png";
-        graphic(getImage(name));
+        name = DIALOG_ERROR;
+        icon = getImage(name);
         show();
     }
 
     /**
-     * Shows the notification with the built-in 'confirm' graphic.
+     * Shows the notification with the built-in 'confirm' image.
      */
     public
     void showConfirm() {
-        name = "dialog-confirm.png";
-        graphic(getImage(name));
+        name = DIALOG_CONFIRM;
+        icon = getImage(name);
         show();
     }
 
     /**
-     * Shows the notification. If the Notification is assigned to a screen, but shown in a JFrame, the screen number will be ignored.
+     * Shows the notification. If the Notification is assigned to a screen, but shown inside a Swing/etc parent, the screen number will be
+     * ignored.
      */
     public
     void show() {
@@ -310,26 +362,7 @@ class Notify {
             public
             void run() {
                 final Notify notify = Notify.this;
-                final Image graphic = notify.graphic;
-
-                // we ONLY cache our own icons
-                ImageIcon imageIcon = null;
-                if (graphic != null) {
-                    if (name != null) {
-                        imageIcon = imageIconCache.get(name);
-                        if (imageIcon == null) {
-                            Image image = new ImageIcon(graphic).getImage();
-
-                            // have to do this twice, so that it will finish loading the image (weird callback stuff is required if we don't do this)
-                            imageIcon = new ImageIcon(image);
-
-                            imageIconCache.put(name, imageIcon);
-                        }
-                    }
-                    else {
-                        imageIcon = new ImageIcon(graphic);
-                    }
-                }
+                final ImageIcon image = notify.icon;
 
                 Theme theme;
                 if (notify.theme != null) {
@@ -340,9 +373,9 @@ class Notify {
                 }
 
                 if (window == null) {
-                    notifyPopup = new AsFrame(notify, graphic, imageIcon, theme);
+                    notifyPopup = new AsFrame(notify, image, theme);
                 } else {
-                    notifyPopup = new AsDialog(notify, graphic, imageIcon, window, theme);
+                    notifyPopup = new AsDialog(notify, image, window, theme);
                 }
 
                 notifyPopup.setVisible(true);
@@ -354,7 +387,7 @@ class Notify {
         });
 
         // don't need to hang onto these.
-        graphic = null;
+        icon = null;
     }
 
     /**

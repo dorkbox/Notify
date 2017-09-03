@@ -126,7 +126,7 @@ class NotifyTest {
                            .hideAfter(13000)
                            .position(Pos.BOTTOM_LEFT)
 //                       .setScreen(0)
-                           .darkStyle()
+//                            .darkStyle()
                            // .shake(1300, 4)
                            // .shake(1300, 10)
                            .hideCloseButton()
