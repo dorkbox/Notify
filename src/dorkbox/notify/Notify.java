@@ -33,7 +33,6 @@ import dorkbox.util.ImageUtil;
 import dorkbox.util.LocationResolver;
 import dorkbox.util.Property;
 import dorkbox.util.SwingUtil;
-import dorkbox.util.Version;
 
 /**
  * Popup notification messages, similar to the popular "Growl" notification system on macosx, that display in the corner of the monitor.
@@ -93,8 +92,8 @@ class Notify {
      * Gets the version number.
      */
     public static
-    Version getVersion() {
-        return new Version("3.2");
+    String getVersion() {
+        return "3.3";
     }
 
     /**
