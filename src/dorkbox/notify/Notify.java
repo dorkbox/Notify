@@ -93,7 +93,7 @@ class Notify {
      */
     public static
     String getVersion() {
-        return "3.3";
+        return "3.4";
     }
 
     /**

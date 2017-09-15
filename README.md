@@ -75,7 +75,7 @@ Maven Info
     <dependency>
       <groupId>com.dorkbox</groupId>
       <artifactId>Notify</artifactId>
-      <version>3.3</version>
+      <version>3.4</version>
     </dependency>
 </dependencies>
 ```
