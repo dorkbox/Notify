@@ -301,14 +301,22 @@ class LookAndFeel {
             // the popups are ALL the same size!
             // popups at TOP grow down, popups at BOTTOM grow up
             int targetY;
+            int prevTargetY; // this is to determine if there is an offset as a result of a toolbar/etc
             int anchorX = sourceLook.anchorX;
             int anchorY = sourceLook.anchorY;
 
-            if (isShowFromTop(sourceLook)) {
-                targetY = anchorY + (popupIndex * (NotifyCanvas.HEIGHT + 10));
-            }
-            else {
-                targetY = anchorY - (popupIndex * (NotifyCanvas.HEIGHT + 10));
+
+            if (popupIndex == 0) {
+                targetY = anchorY;
+            } else {
+                int previousY = looks.get(popupIndex - 1).getParentY();
+
+                if (isShowFromTop(sourceLook)) {
+                    targetY = previousY + (NotifyCanvas.HEIGHT + 10);
+                }
+                else {
+                    targetY = previousY - (NotifyCanvas.HEIGHT + 10);
+                }
             }
 
             looks.add(sourceLook);
