@@ -47,7 +47,7 @@ class NotifyTest {
         panel.add(button);
 
         frame.add(panel);
-        frame.setSize(600, 600);
+        frame.setSize(900, 600);
         frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
         frame.setVisible(true);
 
@@ -69,9 +69,40 @@ class NotifyTest {
                       // .setScreen(0)
                            .darkStyle()
                            // .shake(1300, 4)
-                      // .shake(1300, 10)
+                      .shake(1300, 10)
                            .attach(frame)
                       .hideCloseButton()
+                           .onAction(new ActionHandler<Notify>() {
+                               @Override
+                               public
+                               void handle(final Notify arg0) {
+                                   System.err.println("Notification " + finalI + " clicked on!");
+                               }
+                           });
+            notify.showWarning();
+
+            // try {
+            //     Thread.sleep(1000);
+            // } catch (InterruptedException e) {
+            //     e.printStackTrace();
+            // }
+        }
+
+        for (int i = 0; i < count; i++) {
+            final int finalI = i;
+            notify = Notify.create()
+                           .title("Notify title " + i)
+                           .text("This is a notification " + i + " popup message This is a notification popup message This is a " +
+                                 "notification popup message")
+                           .hideAfter(13000)
+                           .position(Pos.TOP_LEFT)
+                           // .position(Pos.CENTER)
+                      // .setScreen(0)
+                      //      .darkStyle()
+                           // .shake(1300, 4)
+                      // .shake(1300, 10)
+                           .attach(frame)
+                      // .hideCloseButton()
                            .onAction(new ActionHandler<Notify>() {
                                @Override
                                public
@@ -88,6 +119,9 @@ class NotifyTest {
             }
         }
 
+
+
+
         for (int i = 0; i < count; i++) {
             final int finalI = i;
             notify = Notify.create()
@@ -99,7 +133,7 @@ class NotifyTest {
 //                       .setScreen(0)
                            .darkStyle()
                            // .shake(1300, 4)
-                      // .shake(1300, 10)
+                      .shake(1300, 10)
                       .hideCloseButton()
                            .onAction(new ActionHandler<Notify>() {
                                @Override
@@ -123,13 +157,13 @@ class NotifyTest {
                            .title("Notify title " + i)
                            .text("This is a notification " + i + " popup message This is a notification popup message This is a " +
                                  "notification popup message")
-                           .hideAfter(13000)
+                           // .hideAfter(13000)
                            .position(Pos.BOTTOM_LEFT)
 //                       .setScreen(0)
 //                            .darkStyle()
                            // .shake(1300, 4)
                            // .shake(1300, 10)
-                           .hideCloseButton()
+                           // .hideCloseButton()
                            .onAction(new ActionHandler<Notify>() {
                                @Override
                                public

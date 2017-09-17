@@ -16,7 +16,6 @@
 package dorkbox.notify;
 
 import java.awt.Image;
-import java.awt.Window;
 import java.awt.image.BufferedImage;
 import java.io.File;
 import java.io.IOException;
@@ -27,6 +26,7 @@ import java.util.Map;
 
 import javax.imageio.ImageIO;
 import javax.swing.ImageIcon;
+import javax.swing.JFrame;
 
 import dorkbox.util.ActionHandler;
 import dorkbox.util.ImageUtil;
@@ -93,7 +93,7 @@ class Notify {
      */
     public static
     String getVersion() {
-        return "3.4";
+        return "3.5";
     }
 
     /**
@@ -197,13 +197,13 @@ class Notify {
     int screenNumber = Short.MIN_VALUE;
     private ImageIcon icon;
 
-    ActionHandler<Notify> onCloseAction;
+    ActionHandler<Notify> onGeneralAreaClickAction;
     private INotify notifyPopup;
 
     private String name;
     private int shakeDurationInMillis = 0;
     private int shakeAmplitude = 0;
-    private Window window;
+    private JFrame appWindow;
 
     private
     Notify() {
@@ -277,7 +277,7 @@ class Notify {
      */
     public
     Notify onAction(ActionHandler<Notify> onAction) {
-        this.onCloseAction = onAction;
+        this.onGeneralAreaClickAction = onAction;
         return this;
     }
 
@@ -371,10 +371,10 @@ class Notify {
                     theme = new Theme(Notify.TITLE_TEXT_FONT, Notify.MAIN_TEXT_FONT, notify.isDark);
                 }
 
-                if (window == null) {
-                    notifyPopup = new AsFrame(notify, image, theme);
+                if (appWindow == null) {
+                    notifyPopup = new AsDesktop(notify, image, theme);
                 } else {
-                    notifyPopup = new AsDialog(notify, image, window, theme);
+                    notifyPopup = new AsApplication(notify, image, appWindow, theme);
                 }
 
                 notifyPopup.setVisible(true);
@@ -445,11 +445,11 @@ class Notify {
     }
 
     /**
-     * Attaches this notification to a specific JFrame/Window, instead of having a global notification
+     * Attaches this notification to a specific JFrame, instead of having a global notification
      */
     public
-    Notify attach(final Window frame) {
-        this.window = frame;
+    Notify attach(final JFrame frame) {
+        this.appWindow = frame;
         return this;
     }
 

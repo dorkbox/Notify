@@ -15,16 +15,14 @@
  */
 package dorkbox.notify;
 
+import java.awt.Point;
 import java.awt.Rectangle;
 import java.awt.Window;
 import java.awt.event.MouseAdapter;
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Random;
-
-import javax.swing.ImageIcon;
 
 import dorkbox.tweenengine.BaseTween;
 import dorkbox.tweenengine.Tween;
@@ -33,12 +31,12 @@ import dorkbox.tweenengine.TweenEngine;
 import dorkbox.tweenengine.TweenEquations;
 import dorkbox.util.ActionHandler;
 import dorkbox.util.ActionHandlerLong;
-import dorkbox.util.SwingUtil;
+import dorkbox.util.ScreenUtil;
 import dorkbox.util.swing.SwingActiveRender;
 
 @SuppressWarnings({"FieldCanBeLocal"})
 class LookAndFeel {
-    private static final Map<String, ArrayList<LookAndFeel>> popups = new HashMap<String, ArrayList<LookAndFeel>>();
+    private static final Map<String, PopupList> popups = new HashMap<String, PopupList>();
 
     static final TweenEngine animation = TweenEngine.create()
                                                     .unsafe()  // access is only from a single thread ever, so unsafe is preferred.
@@ -46,6 +44,7 @@ class LookAndFeel {
 
     static final NotifyAccessor accessor = new NotifyAccessor();
     private static final ActionHandlerLong frameStartHandler;
+
 
     static {
         // this is for updating the tween engine during active-rendering
@@ -58,8 +57,8 @@ class LookAndFeel {
         };
     }
 
-
-    private static final int PADDING = 40;
+    static final int SPACER = 10;
+    static final int MARGIN = 20;
 
     private static final java.awt.event.WindowAdapter windowListener = new WindowAdapter();
     private static final MouseAdapter mouseListener = new ClickAdapter();
@@ -67,6 +66,7 @@ class LookAndFeel {
     private static final Random RANDOM = new Random();
 
     private static final float MOVE_DURATION = Notify.MOVE_DURATION;
+    private final boolean isDesktopNotification;
 
 
 
@@ -74,6 +74,7 @@ class LookAndFeel {
     private volatile int anchorY;
 
 
+    private final INotify notify;
     private final Window parent;
     private final NotifyCanvas notifyCanvas;
 
@@ -87,69 +88,73 @@ class LookAndFeel {
     private volatile Tween tween = null;
     private volatile Tween hideTween = null;
 
-    private final ActionHandler<Notify> onCloseAction;
+    private final ActionHandler<Notify> onGeneralAreaClickAction;
 
-    LookAndFeel(final Window parent,
+    LookAndFeel(final INotify notify, final Window parent,
                 final NotifyCanvas notifyCanvas,
                 final Notify notification,
-                final ImageIcon image,
-                final Rectangle parentBounds) {
+                final Rectangle parentBounds,
+                final boolean isDesktopNotification) {
 
+        this.notify = notify;
         this.parent = parent;
         this.notifyCanvas = notifyCanvas;
+        this.isDesktopNotification = isDesktopNotification;
 
 
-        parent.addWindowListener(windowListener);
-        parent.addMouseListener(mouseListener);
+        if (isDesktopNotification) {
+            parent.addWindowListener(windowListener);
+        }
+        notifyCanvas.addMouseListener(mouseListener);
 
         hideAfterDurationInSeconds = notification.hideAfterDurationInMillis / 1000.0F;
         position = notification.position;
 
-        if (notification.onCloseAction != null) {
-            onCloseAction = new ActionHandler<Notify>() {
+        if (notification.onGeneralAreaClickAction != null) {
+            onGeneralAreaClickAction = new ActionHandler<Notify>() {
                 @Override
                 public
                 void handle(final Notify value) {
-                    notification.onCloseAction.handle(notification);
+                    notification.onGeneralAreaClickAction.handle(notification);
                 }
             };
         }
         else {
-            onCloseAction = null;
+            onGeneralAreaClickAction = null;
         }
 
-        idAndPosition = parentBounds.x + ":" + parentBounds.y + ":" + parentBounds.width + ":" + parentBounds.height + ":" + position;
-
-        anchorX = getAnchorX(position, parentBounds);
-        anchorY = getAnchorY(position, parentBounds);
-
-        if (image != null) {
-            parent.setIconImage(image.getImage());
+        if (isDesktopNotification) {
+            Point point = new Point((int) parentBounds.getX(), ((int) parentBounds.getY()));
+            idAndPosition = ScreenUtil.getMonitorNumberAtLocation(point) + ":" + position;
+        } else {
+            idAndPosition = parent.getName() + ":" + position;
         }
-        else {
-            parent.setIconImage(SwingUtil.BLANK_ICON);
-        }
+
+
+        anchorX = getAnchorX(position, parentBounds, isDesktopNotification);
+        anchorY = getAnchorY(position, parentBounds, isDesktopNotification);
     }
 
     void onClick(final int x, final int y) {
         // Check - we were over the 'X' (and thus no notify), or was it in the general area?
 
-        if (notifyCanvas.isCloseButton(x, y)) {
-            // reasonable position for detecting mouse over
-            ((INotify)parent).close();
-        }
-        else {
-            if (onCloseAction != null) {
-                onCloseAction.handle(null);
+        // reasonable position for detecting mouse over
+        if (!notifyCanvas.isCloseButton(x, y)) {
+            // only call the general click handler IF we click in the general area!
+            if (onGeneralAreaClickAction != null) {
+                onGeneralAreaClickAction.handle(null);
             }
-            ((INotify) parent).close();
         }
+
+        // we always close the notification popup
+        notify.close();
     }
 
+    // only called from an application
     void reLayout(final Rectangle bounds) {
         // when the parent window moves, we stop all animation and snap the popup into place. This simplifies logic greatly
-        anchorX = getAnchorX(position, bounds);
-        anchorY = getAnchorY(position, bounds);
+        anchorX = getAnchorX(position, bounds, isDesktopNotification);
+        anchorY = getAnchorY(position, bounds, isDesktopNotification);
 
         boolean showFromTop = isShowFromTop(this);
 
@@ -159,14 +164,29 @@ class LookAndFeel {
         }
 
         int changedY;
-        if (showFromTop) {
-            changedY = anchorY + (popupIndex * (NotifyCanvas.HEIGHT + 10));
+        if (popupIndex == 0) {
+            changedY = anchorY;
         }
         else {
-            changedY = anchorY - (popupIndex * (NotifyCanvas.HEIGHT + 10));
+            synchronized (popups) {
+                String id = idAndPosition;
+
+                PopupList looks = popups.get(id);
+                if (looks != null) {
+                    if (showFromTop) {
+                        changedY = anchorY + (popupIndex * (NotifyCanvas.HEIGHT + SPACER));
+                    }
+                    else {
+                        changedY = anchorY - (popupIndex * (NotifyCanvas.HEIGHT + SPACER));
+                    }
+                }
+                else {
+                    changedY = anchorY;
+                }
+            }
         }
 
-        parent.setLocation(anchorX, changedY);
+        setLocation(anchorX, changedY);
     }
 
     void close() {
@@ -180,8 +200,13 @@ class LookAndFeel {
             tween = null;
         }
 
-        parent.removeWindowListener(windowListener);
+        if (isDesktopNotification) {
+            parent.removeWindowListener(windowListener);
+        }
         parent.removeMouseListener(mouseListener);
+
+        updatePositionsPre(false);
+        updatePositionsPost(false);
     }
 
     void shake(final int durationInMillis, final int amplitude) {
@@ -219,22 +244,52 @@ class LookAndFeel {
                  .start();
     }
 
-    void setParentY(final int y) {
-        parent.setLocation(parent.getX(), y);
+    void setY(final int y) {
+        if (isDesktopNotification) {
+            parent.setLocation(parent.getX(), y);
+        }
+        else {
+            notifyCanvas.setLocation(notifyCanvas.getX(), y);
+        }
     }
 
-    int getParentY() {
-        return parent.getY();
+    int getY() {
+        if (isDesktopNotification) {
+            return parent.getY();
+        }
+        else {
+            return notifyCanvas.getY();
+        }
     }
 
-    int getParentX() {
-        return parent.getX();
+    int getX() {
+        if (isDesktopNotification) {
+            return parent.getX();
+        }
+        else {
+            return notifyCanvas.getX();
+        }
+    }
+
+    void setLocation(final int x, final int y) {
+        if (isDesktopNotification) {
+            parent.setLocation(x, y);
+        }
+        else {
+            notifyCanvas.setLocation(x, y);
+        }
     }
 
     private static
-    int getAnchorX(final Pos position, final Rectangle bounds) {
+    int getAnchorX(final Pos position, final Rectangle bounds, boolean isDesktop) {
         // we use the screen that the mouse is currently on.
-        final int startX = (int) bounds.getX();
+        final int startX;
+        if (isDesktop) {
+            startX = (int) bounds.getX();
+        } else {
+            startX = 0;
+        }
+
         final int screenWidth = (int) bounds.getWidth();
 
         // determine location for the popup
@@ -242,14 +297,14 @@ class LookAndFeel {
         switch (position) {
             case TOP_LEFT:
             case BOTTOM_LEFT:
-                return startX + PADDING;
+                return MARGIN + startX;
 
             case CENTER:
-                return startX + (screenWidth / 2) - NotifyCanvas.WIDTH / 2 - PADDING / 2;
+                return startX + (screenWidth / 2) - NotifyCanvas.WIDTH / 2 - MARGIN / 2;
 
             case TOP_RIGHT:
             case BOTTOM_RIGHT:
-                return startX + screenWidth - NotifyCanvas.WIDTH - PADDING;
+                return startX + screenWidth - NotifyCanvas.WIDTH - MARGIN;
 
             default:
                 throw new RuntimeException("Unknown position. '" + position + "'");
@@ -257,32 +312,37 @@ class LookAndFeel {
     }
 
     private static
-    int getAnchorY(final Pos position, final Rectangle bounds) {
-        final int startY = (int) bounds.getY();
+    int getAnchorY(final Pos position, final Rectangle bounds, final boolean isDesktop) {
+        final int startY;
+        if (isDesktop) {
+            startY = (int) bounds.getY();
+        }
+        else {
+            startY = 0;
+        }
         final int screenHeight = (int) bounds.getHeight();
 
         // get anchorY
         switch (position) {
             case TOP_LEFT:
             case TOP_RIGHT:
-                return PADDING + startY;
+                return startY + MARGIN;
 
             case CENTER:
-                return startY + (screenHeight / 2) - NotifyCanvas.HEIGHT / 2 - PADDING / 2;
+                return startY + (screenHeight / 2) - NotifyCanvas.HEIGHT / 2 - MARGIN / 2 - SPACER;
 
             case BOTTOM_LEFT:
             case BOTTOM_RIGHT:
-                return startY + screenHeight - NotifyCanvas.HEIGHT - PADDING;
+                if (isDesktop) {
+                    return startY + screenHeight - NotifyCanvas.HEIGHT - MARGIN;
+                } else {
+                    return startY + screenHeight - NotifyCanvas.HEIGHT - MARGIN - SPACER * 2;
+                }
 
             default:
                 throw new RuntimeException("Unknown position. '" + position + "'");
         }
     }
-
-    void setParentLocation(final int x, final int y) {
-        parent.setLocation(x, y);
-    }
-
 
     // only called on the swing EDT thread
     private static
@@ -290,37 +350,42 @@ class LookAndFeel {
         synchronized (popups) {
             String id = sourceLook.idAndPosition;
 
-            ArrayList<LookAndFeel> looks = popups.get(id);
+            PopupList looks = popups.get(id);
             if (looks == null) {
-                looks = new ArrayList<LookAndFeel>(4);
+                looks = new PopupList();
                 popups.put(id, looks);
             }
-            final int popupIndex = looks.size();
-            sourceLook.popupIndex = popupIndex;
+            final int index = looks.size();
+            sourceLook.popupIndex = index;
 
             // the popups are ALL the same size!
             // popups at TOP grow down, popups at BOTTOM grow up
             int targetY;
-            int prevTargetY; // this is to determine if there is an offset as a result of a toolbar/etc
             int anchorX = sourceLook.anchorX;
             int anchorY = sourceLook.anchorY;
 
-
-            if (popupIndex == 0) {
+            if (index == 0) {
                 targetY = anchorY;
             } else {
-                int previousY = looks.get(popupIndex - 1).getParentY();
+                boolean showFromTop = isShowFromTop(sourceLook);
 
-                if (isShowFromTop(sourceLook)) {
-                    targetY = previousY + (NotifyCanvas.HEIGHT + 10);
+                if (sourceLook.isDesktopNotification && index == 1) {
+                    // have to adjust for offsets when the window-manager has a toolbar that consumes space and prevents overlap.
+                    // this is only done when the 2nd popup is added to the list
+                    looks.calculateOffset(showFromTop, anchorX, anchorY);
+                }
+
+                if (showFromTop) {
+                    targetY = anchorY + (index * (NotifyCanvas.HEIGHT + SPACER)) + looks.getOffsetY();
                 }
                 else {
-                    targetY = previousY - (NotifyCanvas.HEIGHT + 10);
+                    targetY = anchorY - (index * (NotifyCanvas.HEIGHT + SPACER)) + looks.getOffsetY();
                 }
+
             }
 
             looks.add(sourceLook);
-            sourceLook.setParentLocation(anchorX, targetY);
+            sourceLook.setLocation(anchorX, targetY);
 
             if (sourceLook.hideAfterDurationInSeconds > 0 && sourceLook.hideTween == null) {
                 // begin a timeline to get rid of the popup (default is 5 seconds)
@@ -332,7 +397,7 @@ class LookAndFeel {
                             public
                             void onEvent(final int type, final BaseTween<?> source) {
                                 if (type == Events.COMPLETE) {
-                                    ((INotify) sourceLook.parent).close();
+                                    sourceLook.notify.close();
                                 }
                             }
                         })
@@ -349,7 +414,7 @@ class LookAndFeel {
 
         synchronized (popups) {
             popupsAreEmpty = popups.isEmpty();
-            final ArrayList<LookAndFeel> allLooks = popups.get(sourceLook.idAndPosition);
+            final PopupList allLooks = popups.get(sourceLook.idAndPosition);
 
             // there are two loops because it is necessary to cancel + remove all tweens BEFORE adding new ones.
             boolean adjustPopupPosition = false;
@@ -376,15 +441,20 @@ class LookAndFeel {
                 }
             }
 
-            for (final LookAndFeel look : allLooks) {
+            // have to adjust for offsets when the window-manager has a toolbar that consumes space and prevents overlap.
+            int offsetY = allLooks.getOffsetY();
+
+            for (int index = 0; index < allLooks.size(); index++) {
+                final LookAndFeel look = allLooks.get(index);
                 // the popups are ALL the same size!
                 // popups at TOP grow down, popups at BOTTOM grow up
                 int changedY;
+
                 if (showFromTop) {
-                    changedY = look.anchorY + (look.popupIndex * (NotifyCanvas.HEIGHT + 10));
+                    changedY = look.anchorY + (look.popupIndex * (NotifyCanvas.HEIGHT + SPACER) + offsetY);
                 }
                 else {
-                    changedY = look.anchorY - (look.popupIndex * (NotifyCanvas.HEIGHT + 10));
+                    changedY = look.anchorY - (look.popupIndex * (NotifyCanvas.HEIGHT + SPACER) + offsetY);
                 }
 
                 // now animate that popup to it's new location
@@ -392,15 +462,15 @@ class LookAndFeel {
                                       .target((float) changedY)
                                       .ease(TweenEquations.Linear)
                                       .addCallback(new TweenCallback() {
-                                         @Override
-                                         public
-                                         void onEvent(final int type, final BaseTween<?> source) {
-                                             if (type == Events.COMPLETE) {
-                                                 // make sure to remove the tween once it's done, otherwise .kill can do weird things.
-                                                 look.tween = null;
-                                             }
-                                         }
-                                     })
+                                          @Override
+                                          public
+                                          void onEvent(final int type, final BaseTween<?> source) {
+                                              if (type == Events.COMPLETE) {
+                                                  // make sure to remove the tween once it's done, otherwise .kill can do weird things.
+                                                  look.tween = null;
+                                              }
+                                          }
+                                      })
                                       .start();
             }
         }
@@ -448,7 +518,6 @@ class LookAndFeel {
      */
     void updatePositionsPost(final boolean visible) {
         if (visible) {
-
             SwingActiveRender.addActiveRender(notifyCanvas);
 
             // start if we have previously stopped the timer

@@ -32,11 +32,11 @@ class NotifyAccessor implements TweenAccessor<LookAndFeel> {
     int getValues(final LookAndFeel target, final int tweenType, final float[] returnValues) {
         switch (tweenType) {
             case Y_POS:
-                returnValues[0] = (float) target.getParentY();
+                returnValues[0] = (float) target.getY();
                 return 1;
             case X_Y_POS:
-                returnValues[0] = (float) target.getParentX();
-                returnValues[1] = (float) target.getParentY();
+                returnValues[0] = (float) target.getX();
+                returnValues[1] = (float) target.getY();
                 return 2;
             case PROGRESS:
                 returnValues[0] = (float) target.getProgress();
@@ -51,10 +51,10 @@ class NotifyAccessor implements TweenAccessor<LookAndFeel> {
     void setValues(final LookAndFeel target, final int tweenType, final float[] newValues) {
         switch (tweenType) {
             case Y_POS:
-                target.setParentY((int) newValues[0]);
+                target.setY((int) newValues[0]);
                 return;
             case X_Y_POS:
-                target.setParentLocation((int) newValues[0], (int) newValues[1]);
+                target.setLocation((int) newValues[0], (int) newValues[1]);
                 return;
             case PROGRESS:
                 target.setProgress((int) newValues[0]);

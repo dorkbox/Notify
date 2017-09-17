@@ -1,3 +1,18 @@
+/*
+ * Copyright 2015 dorkbox, llc
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License");
+ * you may not use this file except in compliance with the License.
+ * You may obtain a copy of the License at
+ *
+ *     http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS,
+ * WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ * See the License for the specific language governing permissions and
+ * limitations under the License.
+ */
 package dorkbox.notify;
 
 import java.awt.BasicStroke;
@@ -30,15 +45,22 @@ class NotifyCanvas extends Canvas {
     private static final int PROGRESS_HEIGHT = HEIGHT - 2;
 
     private final boolean showCloseButton;
-    private final BufferedImage cachedImage;
+    private BufferedImage cachedImage;
+    private final Notify notification;
+    private final ImageIcon imageIcon;
 
     // for the progress bar. we directly draw this onscreen
     // non-volatile because it's always accessed in the active render thread
     private int progress = 0;
+
     private final Theme theme;
+    final INotify parent;
 
 
-    NotifyCanvas(final Notify notification, final ImageIcon imageIcon, final Theme theme) {
+    NotifyCanvas(final INotify parent, final Notify notification, final ImageIcon imageIcon, final Theme theme) {
+        this.parent = parent;
+        this.notification = notification;
+        this.imageIcon = imageIcon;
         this.theme = theme;
 
         final Dimension preferredSize = new Dimension(WIDTH, HEIGHT);
@@ -53,7 +75,7 @@ class NotifyCanvas extends Canvas {
         showCloseButton = !notification.hideCloseButton;
 
         // now we setup the rendering of the image
-        cachedImage = renderBackgroundInfo(notification.title, notification.text, this.theme, imageIcon);
+        cachedImage = renderBackgroundInfo(notification.title, notification.text, this.theme, this.imageIcon);
     }
 
     void setProgress(final int progress) {
@@ -64,12 +86,38 @@ class NotifyCanvas extends Canvas {
         return progress;
     }
 
+    @Override
     public
     void paint(final Graphics g) {
         // we cache the text + image (to another image), and then always render the close + progressbar
 
         // use our cached image, so we don't have to re-render text/background/etc
-        g.drawImage(cachedImage, 0, 0, null);
+        try {
+            g.drawImage(cachedImage, 0, 0, null);
+        } catch (Exception ignored) {
+            // have also seen (happened after screen/PC was "woken up", in Xubuntu 16.04):
+            // java.lang.ClassCastException:sun.awt.image.BufImgSurfaceData cannot be cast to sun.java2d.xr.XRSurfaceData at sun.java2d.xr.XRPMBlitLoops.cacheToTmpSurface(XRPMBlitLoops.java:148)
+            // at sun.java2d.xr.XrSwToPMBlit.Blit(XRPMBlitLoops.java:356)
+            // at sun.java2d.SurfaceDataProxy.updateSurfaceData(SurfaceDataProxy.java:498)
+            // at sun.java2d.SurfaceDataProxy.replaceData(SurfaceDataProxy.java:455)
+            // at sun.java2d.SurfaceData.getSourceSurfaceData(SurfaceData.java:233)
+            // at sun.java2d.pipe.DrawImage.renderImageCopy(DrawImage.java:566)
+            // at sun.java2d.pipe.DrawImage.copyImage(DrawImage.java:67)
+            // at sun.java2d.pipe.DrawImage.copyImage(DrawImage.java:1014)
+            // at sun.java2d.pipe.ValidatePipe.copyImage(ValidatePipe.java:186)
+            // at sun.java2d.SunGraphics2D.drawImage(SunGraphics2D.java:3318)
+            // at sun.java2d.SunGraphics2D.drawImage(SunGraphics2D.java:3296)
+            // at dorkbox.notify.NotifyCanvas.paint(NotifyCanvas.java:92)
+
+            // redo the image
+            cachedImage = renderBackgroundInfo(notification.title, notification.text, this.theme, imageIcon);
+
+            // try to draw again
+            try {
+                g.drawImage(cachedImage, 0, 0, null);
+            } catch (Exception ignored2) {
+            }
+        }
 
         // the progress bar and close button are the only things that can change, so we always draw them every time
         Graphics2D g2 = (Graphics2D) g.create();

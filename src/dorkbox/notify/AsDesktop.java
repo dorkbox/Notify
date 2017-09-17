@@ -23,16 +23,16 @@ import java.awt.Point;
 import java.awt.Rectangle;
 
 import javax.swing.ImageIcon;
-import javax.swing.JFrame;
+import javax.swing.JWindow;
 
 import dorkbox.util.ScreenUtil;
 import dorkbox.util.SwingUtil;
 
 // we can't use regular popup, because if we have no owner, it won't work!
-// instead, we just create a JFrame and use it to hold our content
+// instead, we just create a JWindow and use it to hold our content
 @SuppressWarnings({"Duplicates", "FieldCanBeLocal", "WeakerAccess", "DanglingJavadoc"})
 public
-class AsFrame extends JFrame implements INotify {
+class AsDesktop extends JWindow implements INotify {
     private static final long serialVersionUID = 1L;
 
     private final LookAndFeel look;
@@ -41,13 +41,10 @@ class AsFrame extends JFrame implements INotify {
 
     // this is on the swing EDT
     @SuppressWarnings("NumericCastThatLosesPrecision")
-    AsFrame(final Notify notification, final ImageIcon image, final Theme theme) {
+    AsDesktop(final Notify notification, final ImageIcon image, final Theme theme) {
         this.notification = notification;
 
-        setDefaultCloseOperation(JFrame.DO_NOTHING_ON_CLOSE);
-        setUndecorated(true);
         setAlwaysOnTop(true);
-        // setLayout(null);
 
         final Dimension preferredSize = new Dimension(WIDTH, HEIGHT);
         setPreferredSize(preferredSize);
@@ -55,9 +52,6 @@ class AsFrame extends JFrame implements INotify {
         setMinimumSize(preferredSize);
         setSize(NotifyCanvas.WIDTH, NotifyCanvas.HEIGHT);
         setLocation(Short.MIN_VALUE, Short.MIN_VALUE);
-
-        setTitle(notification.title);
-        setResizable(false);
 
         Rectangle bounds;
         GraphicsDevice device;
@@ -89,10 +83,10 @@ class AsFrame extends JFrame implements INotify {
                        .getBounds();
 
 
-        NotifyCanvas notifyCanvas = new NotifyCanvas(notification, image, theme);
+        NotifyCanvas notifyCanvas = new NotifyCanvas(this, notification, image, theme);
         getContentPane().add(notifyCanvas);
 
-        look = new LookAndFeel(this, notifyCanvas, notification, image, bounds);
+        look = new LookAndFeel(this, this, notifyCanvas, notification, bounds, true);
     }
 
     @Override
@@ -135,6 +129,11 @@ class AsFrame extends JFrame implements INotify {
         }
     }
 
+    // setVisible(false) with any extra logic
+    void doHide() {
+        super.setVisible(false);
+    }
+
     @Override
     public
     void close() {
@@ -143,14 +142,9 @@ class AsFrame extends JFrame implements INotify {
             @Override
             public
             void run() {
-                // set it off screen (which is what the close method also does)
-                if (isVisible()) {
-                    setVisible(false);
-                }
-
+                doHide();
                 look.close();
 
-                setIconImage(null);
                 removeAll();
                 dispose();
 

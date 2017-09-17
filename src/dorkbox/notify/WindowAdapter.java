@@ -22,7 +22,7 @@ class WindowAdapter extends java.awt.event.WindowAdapter {
     public
     void windowClosing(WindowEvent e) {
         if (e.getNewState() != WindowEvent.WINDOW_CLOSED) {
-            AsFrame source = (AsFrame) e.getSource();
+            AsDesktop source = (AsDesktop) e.getSource();
             source.close();
         }
     }
@@ -31,7 +31,7 @@ class WindowAdapter extends java.awt.event.WindowAdapter {
     public
     void windowLostFocus(WindowEvent e) {
         if (e.getNewState() != WindowEvent.WINDOW_CLOSED) {
-            AsFrame source = (AsFrame) e.getSource();
+            AsDesktop source = (AsDesktop) e.getSource();
             // these don't work
             //toFront();
             //requestFocus();

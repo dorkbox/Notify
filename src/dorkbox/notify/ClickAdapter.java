@@ -26,7 +26,7 @@ class ClickAdapter extends MouseAdapter {
     @Override
     public
     void mouseReleased(final MouseEvent e) {
-        INotify source = (INotify) e.getSource();
-        source.onClick(e.getX(), e.getY());
+        INotify parent = ((NotifyCanvas) e.getSource()).parent;
+        parent.onClick(e.getX(), e.getY());
     }
 }
