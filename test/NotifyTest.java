@@ -162,7 +162,8 @@ class NotifyTest {
         try {
             image = ImageUtil.getImageImmediate(ImageIO.read(resourceAsStream));
             // image = image.getScaledInstance(144, 104, Image.SCALE_SMOOTH);
-            image = image.getScaledInstance(104, 144, Image.SCALE_SMOOTH);
+            // image = image.getScaledInstance(104, 144, Image.SCALE_SMOOTH);
+            image = image.getScaledInstance(144, 144, Image.SCALE_SMOOTH);
         } catch (IOException e) {
             e.printStackTrace();
         }
