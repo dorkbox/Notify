@@ -93,7 +93,7 @@ class Notify {
      */
     public static
     String getVersion() {
-        return "3.5";
+        return "3.6";
     }
 
     /**
@@ -244,6 +244,12 @@ class Notify {
         } else {
             bufferedImage = ImageUtil.resizeImage(bufferedImage, -1, 48);
         }
+
+        // we have to now clamp to a max dimension of 48
+        bufferedImage = ImageUtil.clampMaxImageSize(bufferedImage, 48);
+
+        // now we want to center the image
+        bufferedImage = ImageUtil.getSquareBufferedImage(bufferedImage);
 
         this.icon = new ImageIcon(bufferedImage);
         return this;

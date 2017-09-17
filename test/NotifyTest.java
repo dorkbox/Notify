@@ -14,7 +14,11 @@
  * limitations under the License.
  */
 import java.awt.FlowLayout;
+import java.awt.Image;
+import java.io.IOException;
+import java.io.InputStream;
 
+import javax.imageio.ImageIO;
 import javax.swing.JButton;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -23,6 +27,8 @@ import javax.swing.JPanel;
 import dorkbox.notify.Notify;
 import dorkbox.notify.Pos;
 import dorkbox.util.ActionHandler;
+import dorkbox.util.ImageUtil;
+import dorkbox.util.LocationResolver;
 import dorkbox.util.ScreenUtil;
 
 public
@@ -142,7 +148,7 @@ class NotifyTest {
                                    System.err.println("Notification " + finalI + " clicked on!");
                                }
                            });
-            notify.showConfirm();
+            notify.show();
 
             try {
                 Thread.sleep(1000);
@@ -150,6 +156,17 @@ class NotifyTest {
                 e.printStackTrace();
             }
         }
+
+        InputStream resourceAsStream = LocationResolver.getResourceAsStream("notify-dark.png");
+        Image image = null;
+        try {
+            image = ImageUtil.getImageImmediate(ImageIO.read(resourceAsStream));
+            // image = image.getScaledInstance(144, 104, Image.SCALE_SMOOTH);
+            image = image.getScaledInstance(104, 144, Image.SCALE_SMOOTH);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+
 
         for (int i = 0; i < count; i++) {
             final int finalI = i;
@@ -171,7 +188,14 @@ class NotifyTest {
                                    System.err.println("Notification " + finalI + " clicked on!");
                                }
                            });
-            notify.show();
+
+            if (i == 0) {
+                notify.image(image);
+                notify.show();
+            }
+            else {
+                notify.showConfirm();
+            }
 
             try {
                 Thread.sleep(1000);
