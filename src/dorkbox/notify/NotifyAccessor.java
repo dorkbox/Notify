@@ -15,7 +15,7 @@
  */
 package dorkbox.notify;
 
-import dorkbox.tweenengine.TweenAccessor;
+import dorkbox.tweenEngine.TweenAccessor;
 
 class NotifyAccessor implements TweenAccessor<LookAndFeel> {
 

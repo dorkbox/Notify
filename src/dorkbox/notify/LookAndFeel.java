@@ -24,11 +24,11 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Random;
 
-import dorkbox.tweenengine.BaseTween;
-import dorkbox.tweenengine.Tween;
-import dorkbox.tweenengine.TweenCallback;
-import dorkbox.tweenengine.TweenEngine;
-import dorkbox.tweenengine.TweenEquations;
+import dorkbox.tweenEngine.BaseTween;
+import dorkbox.tweenEngine.Tween;
+import dorkbox.tweenEngine.TweenCallback;
+import dorkbox.tweenEngine.TweenEngine;
+import dorkbox.tweenEngine.TweenEquations;
 import dorkbox.util.ActionHandler;
 import dorkbox.util.ActionHandlerLong;
 import dorkbox.util.ScreenUtil;
