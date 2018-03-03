@@ -5,6 +5,18 @@ Cross platform notification popups, similar to "Growl" on OSX, "Toasts" on Windo
 
 This small library can display notifications on any screen, in any corner.
 
+
+Basic usage 
+---------
+```java
+Notify.create()
+    .title("Title Text")
+    .text("Hello World!")
+    .useDarkStyle()
+    .showWarning();
+```
+
+
 Primary Features:
 
 1. Can specify which screen to use for notification.
@@ -23,6 +35,7 @@ Primary Features:
 - This is for cross-platform use, specifically - linux 32/64, mac 32/64, and windows 32/64. Java 6+
 - You will need the images in the 'resources' directory, in addition to the normal libs.
 - Note: If you want to **COMPLETELY** remove repainting by the swing EDT (for the entire JVM), run `NullRepaintManager.install();`
+
 
 ```
 Customization parameters:
