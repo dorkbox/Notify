@@ -5,6 +5,17 @@ Cross platform notification popups, similar to "Growl" on OSX, "Toasts" on Windo
 
 This small library can display notifications on any screen, in any corner.
 
+
+Basic usage 
+---------
+```java
+Notify.create()
+      .title("Title Text")
+      .text("Hello World!")
+      .useDarkStyle()
+      .showWarning();
+```
+
 Primary Features:
 
 1. Can specify which screen to use for notification.
