@@ -95,6 +95,16 @@ Maven Info
 </dependencies>
 ```
 
+Gradle Info
+---------
+````
+dependencies {
+    ...
+    compile "com.dorkbox:Notify:3.7"
+}
+````
+
+
 Or if you don't want to use Maven, you can access the files directly here:  
 https://oss.sonatype.org/content/repositories/releases/com/dorkbox/Notify/  
 
