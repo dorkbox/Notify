@@ -374,6 +374,6 @@ tasks.named<DependencyUpdatesTask>("dependencyUpdates") {
 /////  Run this task, then refresh the gradle project
 ///////////////////////////////
 val wrapperUpdate by tasks.creating(Wrapper::class) {
-    gradleVersion = "5.1.1"
+    gradleVersion = "5.2.1"
     distributionUrl = distributionUrl.replace("bin", "all")
 }
