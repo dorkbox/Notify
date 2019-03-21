@@ -32,7 +32,7 @@ import kotlin.reflect.full.declaredMemberProperties
 ////// RELEASE : sonatype / maven central, <PUBLISHING - publish> then <RELEASE - closeAndReleaseRepository>
 ///////////////////////////////
 
-println("\tGradle ${project.gradle.gradleVersion}")
+println("\tGradle ${project.gradle.gradleVersion} on Java ${JavaVersion.current()}")
 
 plugins {
     java
@@ -374,6 +374,6 @@ tasks.named<DependencyUpdatesTask>("dependencyUpdates") {
 /////  Run this task, then refresh the gradle project
 ///////////////////////////////
 val wrapperUpdate by tasks.creating(Wrapper::class) {
-    gradleVersion = "5.2.1"
+    gradleVersion = "5.3"
     distributionUrl = distributionUrl.replace("bin", "all")
 }
