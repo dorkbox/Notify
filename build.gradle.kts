@@ -223,6 +223,8 @@ tasks.jar.get().apply {
         attributes["Implementation-Title"] = "${Extras.group}.${Extras.id}"
         attributes["Implementation-Version"] = Extras.buildDate
         attributes["Implementation-Vendor"] = Extras.vendor
+
+        attributes["Automatic-Module-Name"] = Extras.id
     }
 }
 
