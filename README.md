@@ -77,11 +77,6 @@ Release Notes
 ---------
 It is important to note that notifications for an application use the [glassPane](https://docs.oracle.com/javase/tutorial/uiswing/components/rootpane.html#glasspane) and sets it's ````layoutManager```` to ````null````. This can cause problems with some applications, and you'll need to work around this limitation.
 
-This project includes some utility classes that are a small subset of a much larger library. These classes are **kept in sync** with the main utilities library, so "jar hell" is not an issue, and the latest release will always include the same version of utility files as all of the other projects in the dorkbox repository at that time. 
-  
-  Please note that the utility source code is included in the release and on our [GitHub](https://github.com/dorkbox/Utilities) repository.
-  
-  
 Maven Info
 ---------
 ```
