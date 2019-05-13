@@ -45,9 +45,7 @@ plugins {
     id("com.dorkbox.CrossCompile") version "1.0.1"
     id("com.dorkbox.Licensing") version "1.4"
     id("com.dorkbox.VersionUpdate") version "1.4.1"
-
-    // setup checking for the latest version of a plugin or dependency
-    id("com.github.ben-manes.versions") version "0.20.0"
+    id("com.dorkbox.GradleUtils") version "1.0"
 
     kotlin("jvm") version "1.3.11"
 }
@@ -290,38 +288,4 @@ nexusStaging {
 
 signing {
     sign(publishing.publications["maven"])
-}
-
-
-
-///////////////////////////////
-/////   Prevent anything other than a release from showing version updates
-////  https://github.com/ben-manes/gradle-versions-plugin/blob/master/README.md
-///////////////////////////////
-tasks.named<DependencyUpdatesTask>("dependencyUpdates") {
-    resolutionStrategy {
-        componentSelection {
-            all {
-                val rejected = listOf("alpha", "beta", "rc", "cr", "m", "preview")
-                    .map { qualifier -> Regex("(?i).*[.-]$qualifier[.\\d-]*") }
-                    .any { it.matches(candidate.version) }
-                if (rejected) {
-                    reject("Release candidate")
-                }
-            }
-        }
-    }
-
-    // optional parameters
-    checkForGradleUpdate = true
-}
-
-
-///////////////////////////////
-//////    Gradle Wrapper Configuration.
-/////  Run this task, then refresh the gradle project
-///////////////////////////////
-val wrapperUpdate by tasks.creating(Wrapper::class) {
-    gradleVersion = "5.3"
-    distributionUrl = distributionUrl.replace("bin", "all")
 }
