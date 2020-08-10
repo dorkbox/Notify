@@ -25,6 +25,7 @@ import javax.swing.JLabel;
 import javax.swing.JPanel;
 
 import dorkbox.notify.Notify;
+import dorkbox.notify.NotifyCanvas;
 import dorkbox.notify.Pos;
 import dorkbox.util.ActionHandler;
 import dorkbox.util.ImageUtil;
@@ -62,6 +63,10 @@ class NotifyTest {
 
 
         int count = 2;
+
+        // You can customize the dimension of the notification
+        NotifyCanvas.WIDTH = 300;
+        NotifyCanvas.HEIGHT = 100;
 
         for (int i = 0; i < count; i++) {
             final int finalI = i;

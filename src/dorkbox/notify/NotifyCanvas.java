@@ -30,19 +30,22 @@ import javax.swing.ImageIcon;
 import javax.swing.JLabel;
 
 @SuppressWarnings("FieldCanBeLocal")
+public
 class NotifyCanvas extends Canvas {
     private static final Stroke stroke = new BasicStroke(2);
-    private static final int closeX = 282;
+
+    public static int WIDTH = 300;
+    public static int HEIGHT = 87;
+
+    private static int closeX = WIDTH - 17;
     private static final int closeY = 2;
 
     private static final int Y_1 = closeY + 5;
-    private static final int X_1 = closeX + 5;
+    private static int X_1 = closeX + 5;
     private static final int Y_2 = closeY + 11;
-    private static final int X_2 = closeX + 11;
+    private static int X_2 = closeX + 11;
 
-    static final int WIDTH = 300;
-    static final int HEIGHT = 87;
-    private static final int PROGRESS_HEIGHT = HEIGHT - 2;
+    private static int PROGRESS_HEIGHT = HEIGHT - 2;
 
     private final boolean showCloseButton;
     private BufferedImage cachedImage;
@@ -137,6 +140,8 @@ class NotifyCanvas extends Canvas {
                     g3.setColor(theme.closeX_FG);
                 }
 
+                dinamicallyCalcCoordiantes();
+
                 // draw the X
                 g3.drawLine(X_1, Y_1, X_2, Y_2);
                 g3.drawLine(X_2, Y_1, X_1, Y_2);
@@ -147,6 +152,14 @@ class NotifyCanvas extends Canvas {
         } finally {
             g2.dispose();
         }
+    }
+
+    private void dinamicallyCalcCoordiantes() {
+        closeX = WIDTH - 17;
+        X_1 = closeX + 5;
+        X_2 = closeX + 11;
+
+        PROGRESS_HEIGHT = HEIGHT - 2;
     }
 
     /**
@@ -193,7 +206,7 @@ class NotifyCanvas extends Canvas {
                 textLengthLimit = 88;
                 posX = 60;
                 // Draw the image
-                imageIcon.paintIcon(null, g2, 5, 30);
+                imageIcon.paintIcon(null, g2, 5, (HEIGHT / 2) - (imageIcon.getIconHeight() / 2));
             }
 
             // Draw the main text
