@@ -454,7 +454,7 @@ class LookAndFeel {
                     changedY = look.anchorY + (look.popupIndex * (NotifyCanvas.HEIGHT + SPACER) + offsetY);
                 }
                 else {
-                    changedY = look.anchorY - (look.popupIndex * (NotifyCanvas.HEIGHT + SPACER) + offsetY);
+                    changedY = look.anchorY - (look.popupIndex * (NotifyCanvas.HEIGHT + SPACER));// + offsetY);
                 }
 
                 // now animate that popup to it's new location
