@@ -334,7 +334,7 @@ class LookAndFeel {
             case BOTTOM_LEFT:
             case BOTTOM_RIGHT:
                 if (isDesktop) {
-                    return startY + screenHeight - NotifyCanvas.HEIGHT - MARGIN;
+                    return startY + screenHeight - NotifyCanvas.HEIGHT - MARGIN - SPACER * 3;
                 } else {
                     return startY + screenHeight - NotifyCanvas.HEIGHT - MARGIN - SPACER * 2;
                 }
@@ -379,7 +379,7 @@ class LookAndFeel {
                     targetY = anchorY + (index * (NotifyCanvas.HEIGHT + SPACER)) + looks.getOffsetY();
                 }
                 else {
-                    targetY = anchorY - (index * (NotifyCanvas.HEIGHT + SPACER)) + looks.getOffsetY();
+                    targetY = anchorY - (index * (NotifyCanvas.HEIGHT + SPACER));// + looks.getOffsetY();
                 }
 
             }
