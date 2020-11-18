@@ -286,6 +286,6 @@ nexusStaging {
     password = Extras.sonatypePassword
 }
 
-signing {
-    sign(publishing.publications["maven"])
-}
+// signing {
+//     sign(publishing.publications["maven"])
+// }
