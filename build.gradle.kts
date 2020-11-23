@@ -286,6 +286,7 @@ nexusStaging {
     password = Extras.sonatypePassword
 }
 
-// signing {
-//     sign(publishing.publications["maven"])
-// }
+ signing {
+     useGpgCmd()
+     sign(configurations.archives.get())
+ }
