@@ -34,7 +34,7 @@ class Theme {
     final Font titleTextFont;
     final Font mainTextFont;
 
-
+    public
     Theme(final String titleTextFont, final String mainTextFont, boolean isDarkTheme) {
         this.titleTextFont = FontUtil.parseFont(titleTextFont);
         this.mainTextFont = FontUtil.parseFont(mainTextFont);
