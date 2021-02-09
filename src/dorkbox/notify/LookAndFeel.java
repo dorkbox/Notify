@@ -24,15 +24,14 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Random;
 
+import dorkbox.swingActiveRender.ActionHandlerLong;
+import dorkbox.swingActiveRender.SwingActiveRender;
 import dorkbox.tweenEngine.BaseTween;
 import dorkbox.tweenEngine.Tween;
 import dorkbox.tweenEngine.TweenCallback;
 import dorkbox.tweenEngine.TweenEngine;
 import dorkbox.tweenEngine.TweenEquations;
-import dorkbox.util.ActionHandler;
-import dorkbox.util.ActionHandlerLong;
 import dorkbox.util.ScreenUtil;
-import dorkbox.util.swing.SwingActiveRender;
 
 @SuppressWarnings({"FieldCanBeLocal"})
 class LookAndFeel {

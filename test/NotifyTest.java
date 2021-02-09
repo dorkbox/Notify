@@ -26,7 +26,6 @@ import javax.swing.JPanel;
 
 import dorkbox.notify.Notify;
 import dorkbox.notify.Pos;
-import dorkbox.util.ActionHandler;
 import dorkbox.util.ImageUtil;
 import dorkbox.util.LocationResolver;
 import dorkbox.util.ScreenUtil;
@@ -63,104 +62,107 @@ class NotifyTest {
 
         int count = 2;
 
-        for (int i = 0; i < count; i++) {
-            final int finalI = i;
-            notify = Notify.create()
-                           .title("Notify title " + i)
-                           .text("This is a notification " + i + " popup message This is a notification popup message This is a " +
-                                 "notification popup message")
-                           .hideAfter(13000)
-                           .position(Pos.BOTTOM_RIGHT)
-                           // .position(Pos.CENTER)
-                      // .setScreen(0)
-                           .darkStyle()
-                           // .shake(1300, 4)
-                      .shake(1300, 10)
-                           .attach(frame)
-                      .hideCloseButton()
-                           .onAction(new ActionHandler<Notify>() {
-                               @Override
-                               public
-                               void handle(final Notify arg0) {
-                                   System.err.println("Notification " + finalI + " clicked on!");
-                               }
-                           });
-            notify.showWarning();
+//         for (int i = 0; i < count; i++) {
+//             final int finalI = i;
+//             notify = Notify.create()
+//                            .title("Notify title " + i)
+//                            .text("This is a notification " + i + " popup message This is a notification popup message This is a " +
+//                                  "notification popup message")
+//                            .hideAfter(13000)
+//                            .position(Pos.BOTTOM_RIGHT)
+//                            // .position(Pos.CENTER)
+//                       // .setScreen(0)
+//                            .darkStyle()
+//                            // .shake(1300, 4)
+//                       .shake(1300, 10)
+//                            .attach(frame)
+//                       .hideCloseButton()
+//                            .onAction(new ActionHandler<Notify>() {
+//                                @Override
+//                                public
+//                                void handle(final Notify arg0) {
+//                                    System.err.println("Notification " + finalI + " clicked on!");
+//                                }
+//                            });
+//             notify.showWarning();
+//
+//             // try {
+//             //     Thread.sleep(1000);
+//             // } catch (InterruptedException e) {
+//             //     e.printStackTrace();
+//             // }
+//         }
+//
+//         for (int i = 0; i < count; i++) {
+//             final int finalI = i;
+//             notify = Notify.create()
+//                            .title("Notify title " + i)
+//                            .text("This is a notification " + i + " popup message This is a notification popup message This is a " +
+//                                  "notification popup message")
+//                            .hideAfter(13000)
+//                            .position(Pos.TOP_LEFT)
+//                            // .position(Pos.CENTER)
+//                       // .setScreen(0)
+//                       //      .darkStyle()
+//                            // .shake(1300, 4)
+//                       // .shake(1300, 10)
+//                            .attach(frame)
+//                       // .hideCloseButton()
+//                            .onAction(new ActionHandler<Notify>() {
+//                                @Override
+//                                public
+//                                void handle(final Notify arg0) {
+//                                    System.err.println("Notification " + finalI + " clicked on!");
+//                                }
+//                            });
+//             notify.showWarning();
+//
+//             try {
+//                 Thread.sleep(1000);
+//             } catch (InterruptedException e) {
+//                 e.printStackTrace();
+//             }
+//         }
+//
+//
+//
+//
+//         for (int i = 0; i < count; i++) {
+//             final int finalI = i;
+//             notify = Notify.create()
+//                            .title("Notify title " + i)
+//                            .text("This is a notification " + i + " popup message This is a notification popup message This is a " +
+//                                  "notification popup message")
+//                            .hideAfter(3000)
+//                            .position(Pos.TOP_RIGHT)
+// //                       .setScreen(0)
+//                            .darkStyle()
+//                            // .shake(1300, 4)
+//                       .shake(1300, 10)
+//                       .hideCloseButton()
+//                            .onAction(new ActionHandler<Notify>() {
+//                                @Override
+//                                public
+//                                void handle(final Notify arg0) {
+//                                    System.err.println("Notification " + finalI + " clicked on!");
+//                                }
+//                            });
+//             notify.show();
+//
+//             try {
+//                 Thread.sleep(1000);
+//             } catch (InterruptedException e) {
+//                 e.printStackTrace();
+//             }
+//         }
 
-            // try {
-            //     Thread.sleep(1000);
-            // } catch (InterruptedException e) {
-            //     e.printStackTrace();
-            // }
-        }
-
-        for (int i = 0; i < count; i++) {
-            final int finalI = i;
-            notify = Notify.create()
-                           .title("Notify title " + i)
-                           .text("This is a notification " + i + " popup message This is a notification popup message This is a " +
-                                 "notification popup message")
-                           .hideAfter(13000)
-                           .position(Pos.TOP_LEFT)
-                           // .position(Pos.CENTER)
-                      // .setScreen(0)
-                      //      .darkStyle()
-                           // .shake(1300, 4)
-                      // .shake(1300, 10)
-                           .attach(frame)
-                      // .hideCloseButton()
-                           .onAction(new ActionHandler<Notify>() {
-                               @Override
-                               public
-                               void handle(final Notify arg0) {
-                                   System.err.println("Notification " + finalI + " clicked on!");
-                               }
-                           });
-            notify.showWarning();
-
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-
-
-
-
-        for (int i = 0; i < count; i++) {
-            final int finalI = i;
-            notify = Notify.create()
-                           .title("Notify title " + i)
-                           .text("This is a notification " + i + " popup message This is a notification popup message This is a " +
-                                 "notification popup message")
-                           .hideAfter(3000)
-                           .position(Pos.TOP_RIGHT)
-//                       .setScreen(0)
-                           .darkStyle()
-                           // .shake(1300, 4)
-                      .shake(1300, 10)
-                      .hideCloseButton()
-                           .onAction(new ActionHandler<Notify>() {
-                               @Override
-                               public
-                               void handle(final Notify arg0) {
-                                   System.err.println("Notification " + finalI + " clicked on!");
-                               }
-                           });
-            notify.show();
-
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
-
+        // The purpose of this, is to display this image AS A SQUARE!
         InputStream resourceAsStream = LocationResolver.getResourceAsStream("notify-dark.png");
         Image image = null;
         try {
-            image = ImageUtil.getImageImmediate(ImageIO.read(resourceAsStream));
+            image = ImageIO.read(resourceAsStream);
+            ImageUtil.waitForImageLoad(image);
+
             // image = image.getScaledInstance(144, 104, Image.SCALE_SMOOTH);
             // image = image.getScaledInstance(104, 144, Image.SCALE_SMOOTH);
             image = image.getScaledInstance(144, 144, Image.SCALE_SMOOTH);
@@ -168,41 +170,59 @@ class NotifyTest {
             e.printStackTrace();
         }
 
-
-        for (int i = 0; i < count; i++) {
-            final int finalI = i;
-            notify = Notify.create()
-                           .title("Notify title " + i)
-                           .text("This is a notification " + i + " popup message This is a notification popup message This is a " +
-                                 "notification popup message")
-                           // .hideAfter(13000)
-                           .position(Pos.BOTTOM_LEFT)
+        notify = Notify.create()
+                       .title("Notify scaled")
+                       .text("This is a notification popup message scaled This is a notification popup message This is a " +
+                             "notification popup message scaled ")
+                       // .hideAfter(13000)
+                       .position(Pos.BOTTOM_LEFT)
 //                       .setScreen(0)
 //                            .darkStyle()
-                           // .shake(1300, 4)
-                           // .shake(1300, 10)
-                           // .hideCloseButton()
-                           .onAction(new ActionHandler<Notify>() {
-                               @Override
-                               public
-                               void handle(final Notify arg0) {
-                                   System.err.println("Notification " + finalI + " clicked on!");
-                               }
-                           });
+                       // .shake(1300, 4)
+                       // .shake(1300, 10)
+                       // .hideCloseButton()
+                       .onAction(arg0->System.err.println("Notification scaled clicked on!"));
 
-            if (i == 0) {
-                notify.image(image);
-                notify.show();
-            }
-            else {
-                notify.showConfirm();
-            }
+        notify.image(image);
+        notify.show();
 
-            try {
-                Thread.sleep(1000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
-        }
+
+
+//
+//         for (int i = 0; i < count; i++) {
+//             final int finalI = i;
+//             notify = Notify.create()
+//                            .title("Notify title " + i)
+//                            .text("This is a notification " + i + " popup message This is a notification popup message This is a " +
+//                                  "notification popup message")
+//                            // .hideAfter(13000)
+//                            .position(Pos.BOTTOM_LEFT)
+// //                       .setScreen(0)
+// //                            .darkStyle()
+//                            // .shake(1300, 4)
+//                            // .shake(1300, 10)
+//                            // .hideCloseButton()
+//                            .onAction(new ActionHandler<Notify>() {
+//                                @Override
+//                                public
+//                                void handle(final Notify arg0) {
+//                                    System.err.println("Notification " + finalI + " clicked on!");
+//                                }
+//                            });
+//
+//             if (i == 0) {
+//                 notify.image(image);
+//                 notify.show();
+//             }
+//             else {
+//                 notify.showConfirm();
+//             }
+//
+//             try {
+//                 Thread.sleep(1000);
+//             } catch (InterruptedException e) {
+//                 e.printStackTrace();
+//             }
+//         }
     }
 }

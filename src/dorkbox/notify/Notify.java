@@ -17,7 +17,6 @@ package dorkbox.notify;
 
 import java.awt.Image;
 import java.awt.image.BufferedImage;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.ref.SoftReference;
@@ -28,10 +27,9 @@ import javax.imageio.ImageIO;
 import javax.swing.ImageIcon;
 import javax.swing.JFrame;
 
-import dorkbox.util.ActionHandler;
+import dorkbox.propertyLoader.Property;
 import dorkbox.util.ImageUtil;
 import dorkbox.util.LocationResolver;
-import dorkbox.util.Property;
 import dorkbox.util.SwingUtil;
 
 /**
@@ -129,11 +127,11 @@ class Notify {
             throw new RuntimeException("Unable to set an image that already has been set. This action must be done as soon as possible.");
         }
 
-        Image imageImmediate = ImageUtil.getImageImmediate(image);
+        ImageUtil.waitForImageLoad(image);
 
         // we only use 48x48 pixel images. Resize as necessary
-        int width = imageImmediate.getWidth(null);
-        int height = imageImmediate.getHeight(null);
+        int width = image.getWidth(null);
+        int height = image.getHeight(null);
 
         BufferedImage bufferedImage;
 
@@ -161,11 +159,12 @@ class Notify {
             }
 
             if (image == null) {
-                String name = IMAGE_PATH + File.separatorChar + imageName;
+                // String name = IMAGE_PATH + File.separatorChar + imageName;
+                String name = imageName;
 
                 resourceAsStream = LocationResolver.getResourceAsStream(name);
 
-                image = new ImageIcon(ImageUtil.getImageImmediate(ImageIO.read(resourceAsStream)));
+                image = new ImageIcon(ImageIO.read(resourceAsStream));
                 imageCache.put(imageName, new SoftReference<ImageIcon>(image));
             }
         } catch (IOException e) {
