@@ -32,12 +32,13 @@ import dorkbox.tweenEngine.TweenCallback;
 import dorkbox.tweenEngine.TweenEngine;
 import dorkbox.tweenEngine.TweenEquations;
 import dorkbox.util.ScreenUtil;
+import org.jetbrains.annotations.NotNull;
 
 @SuppressWarnings({"FieldCanBeLocal"})
 class LookAndFeel {
     private static final Map<String, PopupList> popups = new HashMap<String, PopupList>();
 
-    static final TweenEngine animation = TweenEngine.create()
+    static final TweenEngine animation = TweenEngine.Companion.create()
                                                     .unsafe()  // access is only from a single thread ever, so unsafe is preferred.
                                                     .build();
 
@@ -392,13 +393,12 @@ class LookAndFeel {
                          .target(NotifyCanvas.WIDTH)
                          .ease(TweenEquations.Linear)
                          .addCallback(new TweenCallback() {
-                            @Override
-                            public
-                            void onEvent(final int type, final BaseTween<?> source) {
-                                if (type == Events.COMPLETE) {
-                                    sourceLook.notify.close();
-                                }
-                            }
+                             @Override
+                             public void onEvent(int type, BaseTween source) {
+                                 if (type == Events.COMPLETE) {
+                                     sourceLook.notify.close();
+                                 }
+                             }
                         })
                          .start();
             }
@@ -456,14 +456,14 @@ class LookAndFeel {
                     changedY = look.anchorY - (look.popupIndex * (NotifyCanvas.HEIGHT + SPACER) + offsetY);
                 }
 
-                // now animate that popup to it's new location
+                // now animate that popup to its new location
                 look.tween = animation.to(look, NotifyAccessor.Y_POS, accessor, MOVE_DURATION)
                                       .target((float) changedY)
                                       .ease(TweenEquations.Linear)
                                       .addCallback(new TweenCallback() {
                                           @Override
                                           public
-                                          void onEvent(final int type, final BaseTween<?> source) {
+                                          void onEvent(final int type, final BaseTween source) {
                                               if (type == Events.COMPLETE) {
                                                   // make sure to remove the tween once it's done, otherwise .kill can do weird things.
                                                   look.tween = null;

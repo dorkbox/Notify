@@ -37,7 +37,6 @@ class NotifyTest {
     void main(String[] args) {
         Notify notify;
 
-
         JFrame frame = new JFrame("Test");
 
         JPanel panel = new JPanel();

@@ -26,12 +26,12 @@ gradle.startParameter.showStacktrace = ShowStacktrace.ALWAYS_FULL   // always sh
 gradle.startParameter.warningMode = WarningMode.All
 
 plugins {
-    id("com.dorkbox.GradleUtils") version "1.12"
-    id("com.dorkbox.Licensing") version "2.5.4"
-    id("com.dorkbox.VersionUpdate") version "2.1"
-    id("com.dorkbox.GradlePublish") version "1.10"
+    id("com.dorkbox.GradleUtils") version "3.10"
+    id("com.dorkbox.Licensing") version "2.20"
+    id("com.dorkbox.VersionUpdate") version "2.6"
+    id("com.dorkbox.GradlePublish") version "1.17"
 
-    kotlin("jvm") version "1.4.21-2"
+    kotlin("jvm") version "1.8.0"
 }
 
 object Extras {
@@ -53,8 +53,7 @@ object Extras {
 /////  assign 'Extras'
 ///////////////////////////////
 GradleUtils.load("$projectDir/../../gradle.properties", Extras)
-GradleUtils.fixIntellijPaths()
-GradleUtils.defaultResolutionStrategy()
+GradleUtils.defaults()
 GradleUtils.compileConfiguration(JavaVersion.VERSION_1_8)
 
 licensing {
@@ -72,13 +71,6 @@ licensing {
 
 sourceSets {
     main {
-        java {
-            setSrcDirs(listOf("src"))
-
-            // want to include java files for the source. 'setSrcDirs' resets includes...
-            include("**/*.java")
-        }
-
         resources {
             setSrcDirs(listOf("resources"))
             include("*.png")
@@ -86,23 +78,11 @@ sourceSets {
     }
 
     test {
-        java {
-            setSrcDirs(listOf("test"))
-
-            // want to include java files for the source. 'setSrcDirs' resets includes...
-            include("**/*.java")
-        }
-
         resources {
             setSrcDirs(listOf("test"))
             include("*.png")
         }
     }
-}
-
-repositories {
-    mavenLocal() // this must be first!
-    jcenter()
 }
 
 ///////////////////////////////
@@ -120,16 +100,14 @@ tasks.jar.get().apply {
         attributes["Implementation-Title"] = "${Extras.group}.${Extras.id}"
         attributes["Implementation-Version"] = Extras.buildDate
         attributes["Implementation-Vendor"] = Extras.vendor
-
-        attributes["Automatic-Module-Name"] = Extras.id
     }
 }
 
 dependencies {
-    implementation("com.dorkbox:TweenEngine:8.3")
-    implementation("com.dorkbox:SwingActiveRender:1.1")
-    implementation("com.dorkbox:Utilities:1.9")
-    implementation("com.dorkbox:PropertyLoader:1.0")
+    implementation("com.dorkbox:TweenEngine:8.3.1")
+    implementation("com.dorkbox:SwingActiveRender:1.2")
+    implementation("com.dorkbox:Utilities:1.39")
+    implementation("com.dorkbox:PropertyLoader:1.1")
 }
 
 publishToSonatype {
