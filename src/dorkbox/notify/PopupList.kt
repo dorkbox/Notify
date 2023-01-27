@@ -40,11 +40,11 @@ internal class PopupList {
             val screenInsets = Toolkit.getDefaultToolkit().getScreenInsets(gc)
             if (showFromTop) {
                 if (screenInsets.top > 0) {
-                    offsetY = screenInsets.top - LookAndFeel.MARGIN
+                    offsetY = screenInsets.top - LAFUtil.MARGIN
                 }
             } else {
                 if (screenInsets.bottom > 0) {
-                    offsetY = screenInsets.bottom + LookAndFeel.MARGIN
+                    offsetY = screenInsets.bottom + LAFUtil.MARGIN
                 }
             }
         }

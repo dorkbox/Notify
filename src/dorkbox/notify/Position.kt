@@ -15,9 +15,29 @@
  */
 package dorkbox.notify
 
-interface INotify {
-    fun close()
-    fun shake(durationInMillis: Int, amplitude: Int)
-    fun setVisible(visible: Boolean)
-    fun onClick(x: Int, y: Int)
+enum class Position {
+    /**
+     * top vertically, left horizontally
+     */
+    TOP_LEFT,
+
+    /**
+     * top vertically, right horizontally
+     */
+    TOP_RIGHT,
+
+    /**
+     * center both vertically and horizontally
+     */
+    CENTER,
+
+    /**
+     * bottom vertically, left horizontally
+     */
+    BOTTOM_LEFT,
+
+    /**
+     * bottom vertically, right horizontally
+     */
+    BOTTOM_RIGHT
 }

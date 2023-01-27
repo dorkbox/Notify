@@ -23,6 +23,16 @@ import java.awt.Font
  * Settings available to change the theme
  */
 class Theme {
+    companion object {
+        val defaultLight: Theme by lazy {
+            Theme(Notify.TITLE_TEXT_FONT, Notify.MAIN_TEXT_FONT, false)
+        }
+
+        val defaultDark: Theme by lazy {
+            Theme(Notify.TITLE_TEXT_FONT, Notify.MAIN_TEXT_FONT, true)
+        }
+    }
+
     val panel_BG: Color
     val titleText_FG: Color
     val mainText_FG: Color
@@ -66,5 +76,26 @@ class Theme {
         this.mainText_FG = mainText_FG
         this.closeX_FG = closeX_FG
         this.progress_FG = progress_FG
+    }
+
+    /**
+     * True if we are the default "light" theme
+     */
+    fun isLight(): Boolean {
+        return this === defaultLight
+    }
+
+    /**
+     * True if we are the default "dark" theme
+     */
+    fun isDark(): Boolean {
+        return this === defaultDark
+    }
+
+    /**
+     * True if we are a custom theme
+     */
+    fun isCustom(): Boolean {
+        return !isLight() && !isDark()
     }
 }

@@ -20,7 +20,7 @@ import java.awt.event.MouseEvent
 
 internal class ClickAdapter : MouseAdapter() {
     override fun mouseReleased(e: MouseEvent) {
-        val parent = (e.source as NotifyCanvas).parent
-        parent.onClick(e.x, e.y)
+        val notifyCanvas = e.source as NotifyCanvas
+        notifyCanvas.onClick(e.x, e.y)
     }
 }

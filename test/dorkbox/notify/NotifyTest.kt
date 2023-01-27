@@ -1,3 +1,5 @@
+@file:Suppress("UNUSED_VALUE")
+
 package dorkbox.notify
 
 import dorkbox.util.ImageUtil
@@ -49,9 +51,34 @@ object NotifyTest {
 //        bottomRightInFrame(3, frame)
 //        topLeftInFrame(3, frame)
 
-        topRightMonitor(3)
+        react()
+//        topRightMonitor(3)
 //        bottomLeftScaled(3, frame, image)
 //        bottomLeftStacking(3, frame, image)
+    }
+
+    fun react() {
+        val notify = Notify.create()
+        notify.title("Notify title modify")
+                    .text("This is a notification popup message This is a notification popup message This is a " +
+                            "notification popup message")
+                    .hideAfter(13000)
+                    .position(Position.TOP_RIGHT)
+                    // .setScreen(0)
+                    .theme(Theme.defaultDark)
+                    // .shake(1300, 4)
+                    .shake(4300, 10)
+//                    .hideCloseButton() // if the hideButton is visible, then it's possible to change things when clicked
+                    .onClickAction {
+                        notify.text = "HOWDY"
+                        System.err.println("Notification clicked on!")
+                    }
+            notify.show()
+            try {
+                Thread.sleep(3000)
+            } catch (e: InterruptedException) {
+                e.printStackTrace()
+            }
     }
 
     fun topRightMonitor(count: Int) {
@@ -63,13 +90,13 @@ object NotifyTest {
                     .text("This is a notification " + i + " popup message This is a notification popup message This is a " +
                             "notification popup message")
                     .hideAfter(13000)
-                    .position(Pos.TOP_RIGHT)
+                    .position(Position.TOP_RIGHT)
                     // .setScreen(0)
-                    .darkStyle()
+                .theme(Theme.defaultDark)
                     // .shake(1300, 4)
                     .shake(4300, 10)
                     .hideCloseButton()
-                    .onAction { System.err.println("Notification $i clicked on!") }
+                    .onClickAction { System.err.println("Notification $i clicked on!") }
             notify.show()
             try {
                 Thread.sleep(3000)
@@ -84,12 +111,12 @@ object NotifyTest {
                 .title("Notify scaled")
                 .text("This is a notification popup message scaled This is a notification popup message This is a " +
                         "notification popup message scaled ") // .hideAfter(13000)
-                .position(Pos.BOTTOM_LEFT) //                       .setScreen(0)
+                .position(Position.BOTTOM_LEFT) //                       .setScreen(0)
                 //                            .darkStyle()
                 // .shake(1300, 4)
                 // .shake(1300, 10)
                 // .hideCloseButton()
-                .onAction { System.err.println("Notification scaled clicked on!") }
+                .onClickAction { System.err.println("Notification scaled clicked on!") }
         notify.image(image)
         notify.show()
     }
@@ -103,13 +130,13 @@ object NotifyTest {
                     .text("This is a notification " + i + " popup message This is a notification popup message This is a " +
                             "notification popup message")
                     // .hideAfter(13000)
-                    .position(Pos.BOTTOM_LEFT)
+                    .position(Position.BOTTOM_LEFT)
                     // .setScreen(0)
                     // .darkStyle()
                     // .shake(1300, 4)
                     // .shake(1300, 10)
                     // .hideCloseButton()
-                    .onAction { System.err.println("Notification $i clicked on!") }
+                    .onClickAction { System.err.println("Notification $i clicked on!") }
             if (i == 0) {
                 notify.image(image)
                 notify.show()
@@ -132,13 +159,13 @@ object NotifyTest {
                 .text("This is a notification " + i + " popup message This is a notification popup message This is a " +
                               "notification popup message")
                 .hideAfter(13000)
-                .position(Pos.TOP_LEFT) // .position(Pos.CENTER)
+                .position(Position.TOP_LEFT) // .position(Pos.CENTER)
                 // .setScreen(0)
                 //      .darkStyle()
                 // .shake(1300, 4)
                 // .shake(1300, 10)
                 .attach(frame) // .hideCloseButton()
-                .onAction { System.err.println("Notification $i clicked on!") }
+                .onClickAction { System.err.println("Notification $i clicked on!") }
             notify.showWarning()
 
             try {
@@ -157,13 +184,14 @@ object NotifyTest {
                 .text("This is a notification " + i + " popup message This is a notification popup message This is a " +
                               "notification popup message")
                 .hideAfter(13000)
-                .position(Pos.BOTTOM_RIGHT) // .position(Pos.CENTER)
+                .position(Position.BOTTOM_RIGHT) // .position(Pos.CENTER)
                 // .setScreen(0)
-                .darkStyle() // .shake(1300, 4)
+                .theme(Theme.defaultDark)
+                // .shake(1300, 4)
                 .shake(1300, 10)
                 .attach(frame)
                 .hideCloseButton()
-                .onAction { System.err.println("Notification $i clicked on!") }
+                .onClickAction { System.err.println("Notification $i clicked on!") }
             notify.showWarning()
 
             try {

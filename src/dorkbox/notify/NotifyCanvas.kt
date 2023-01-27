@@ -15,6 +15,7 @@
  */
 package dorkbox.notify
 
+import dorkbox.util.SwingUtil
 import java.awt.BasicStroke
 import java.awt.Canvas
 import java.awt.Color
@@ -28,13 +29,9 @@ import javax.swing.ImageIcon
 import javax.swing.JLabel
 
 internal class NotifyCanvas(
-    val parent: INotify,
-    private val notification: Notify,
-    private val imageIcon: ImageIcon?,
-    private val theme: Theme
+    private val notification: Notify, private val imageIcon: ImageIcon?, private val theme: Theme
 ) : Canvas() {
 
-    private val showCloseButton: Boolean
     private var cachedImage: BufferedImage
 
     // for the progress bar. we directly draw this onscreen
@@ -50,7 +47,7 @@ internal class NotifyCanvas(
 
         isFocusable = false
         background = theme.panel_BG
-        showCloseButton = !notification.hideCloseButton
+
 
         // now we setup the rendering of the image
         cachedImage = renderBackgroundInfo(notification.title, notification.text, theme, imageIcon)
@@ -89,8 +86,9 @@ internal class NotifyCanvas(
 
         // the progress bar and close button are the only things that can change, so we always draw them every time
         val g2 = g.create() as Graphics2D
+
         try {
-            if (showCloseButton) {
+            if (!notification.hideCloseButton) {
                 // manually draw the close button
                 val g3 = g.create() as Graphics2D
                 g3.color = theme.panel_BG
@@ -118,11 +116,22 @@ internal class NotifyCanvas(
         }
     }
 
-    /**
-     * @return TRUE if we were over the 'X' or FALSE if the click was in the general area (and not over the 'X').
-     */
-    fun isCloseButton(x: Int, y: Int): Boolean {
-        return showCloseButton && x >= 280 && y <= 20
+    fun onClick(x: Int, y: Int) {
+        // this must happen in the Swing EDT. This is usually called by the active renderer
+        SwingUtil.invokeLater {
+            // Check - we were over the 'X' (and thus no notify), or was it in the general area?
+
+            val isClickOnCloseButton = !notification.hideCloseButton && x >= 280 && y <= 20
+
+            // reasonable position for detecting mouse over
+            if (!isClickOnCloseButton) {
+                // only call the general click handler IF we click in the general area!
+                notification.onClickAction()
+            } else {
+                // we always close the notification popup
+                notification.onClose()
+            }
+        }
     }
 
     companion object {

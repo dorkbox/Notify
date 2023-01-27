@@ -15,29 +15,7 @@
  */
 package dorkbox.notify
 
-enum class Pos {
-    /**
-     * top vertically, left horizontally
-     */
-    TOP_LEFT,
-
-    /**
-     * top vertically, right horizontally
-     */
-    TOP_RIGHT,
-
-    /**
-     * center both vertically and horizontally
-     */
-    CENTER,
-
-    /**
-     * bottom vertically, left horizontally
-     */
-    BOTTOM_LEFT,
-
-    /**
-     * bottom vertically, right horizontally
-     */
-    BOTTOM_RIGHT
+internal interface NotifyType {
+    fun close()
+    fun setVisible(visible: Boolean, look: LookAndFeel)
 }

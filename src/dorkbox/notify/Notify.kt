@@ -36,16 +36,15 @@ import javax.swing.JFrame
  *
  * These notifications are for a single screen only, and cannot be anchored to an application.
  *
- * <pre>
- * `Notify.create()
+ * ```
+ * `Notify()
  * .title("Title Text")
  * .text("Hello World!")
- * .useDarkStyle()
- * .showWarning();
-` *
-</pre> *
+ * .darkStyle()
+ * .showWarning()
+ * ```
  */
-@Suppress("unused")
+@Suppress("unused", "MemberVisibilityCanBePrivate")
 class Notify private constructor() {
     companion object {
         const val DIALOG_CONFIRM = "dialog-confirm.png"
@@ -130,7 +129,7 @@ class Notify private constructor() {
             imageCache[imageName] = SoftReference(ImageIcon(bufferedImage))
         }
 
-        private fun getImage(imageName: String): ImageIcon? {
+        private fun getImage(imageName: String): ImageIcon {
             var resourceAsStream: InputStream? = null
 
             var image = imageCache[imageName]?.get()
@@ -148,28 +147,65 @@ class Notify private constructor() {
                 resourceAsStream?.close()
             }
 
-            return image
+            return image!!
         }
     }
 
+    @Volatile
+    internal  var notifyPopup: NotifyType? = null
+    @Volatile
+    internal var notifyLook: LookAndFeel? = null
 
-    internal var title = "Notification"
-    internal var text = "Lorem ipsum"
-    private var theme: Theme? = null
-    internal var position = Pos.BOTTOM_RIGHT
-    internal var hideAfterDurationInMillis = 0
-    internal var hideCloseButton = false
-    private var isDark = false
-    internal var screenNumber = Short.MIN_VALUE.toInt()
+    @Volatile
+    var title = "Notification"
 
-    private var icon: ImageIcon? = null
-    internal var onGeneralAreaClickAction: Notify.()->Unit = {}
+    @Volatile
+    var text = "Lorem ipsum"
 
-    private var notifyPopup: INotify? = null
-    private var name: String? = null
-    private var shakeDurationInMillis = 0
-    private var shakeAmplitude = 0
-    private var appWindow: JFrame? = null
+    @Volatile
+    var theme = Theme.defaultLight
+
+    @Volatile
+    var position = Position.BOTTOM_RIGHT
+
+    @Volatile
+    var hideAfterDurationInMillis = 0
+
+    /**
+     * Is the close button in the top-right corner of the notification visible
+     */
+    @Volatile
+    var hideCloseButton = false
+
+    @Volatile
+    var screen = Short.MIN_VALUE.toInt()
+
+    @Volatile
+    var image: ImageIcon? = null
+
+    /**
+     * Called when the notification is closed, either via close button or via close()
+     */
+    @Volatile
+    var onCloseAction: Notify.()->Unit = {}
+
+    /**
+     * Called when the "general area" (but specifically not the "close button") is clicked.
+     */
+    @Volatile
+    var onClickAction: Notify.()->Unit = {}
+
+    @Volatile
+    var name = DIALOG_ERROR
+
+    @Volatile
+    var shakeDurationInMillis = 0
+
+    @Volatile
+    var shakeAmplitude = 0
+
+    @Volatile
+    var attachedFrame: JFrame? = null
 
     /**
      * Specifies the main text
@@ -208,14 +244,16 @@ class Notify private constructor() {
 
         // now we want to center the image
         bufferedImage = ImageUtil.getSquareBufferedImage(bufferedImage)
-        icon = ImageIcon(bufferedImage)
+
+        this.image = ImageIcon(bufferedImage)
+
         return this
     }
 
     /**
-     * Specifies the position of the notification on screen, by default it is [bottom-right][Pos.BOTTOM_RIGHT].
+     * Specifies the position of the notification on screen, by default it is [bottom-right][Position.BOTTOM_RIGHT].
      */
-    fun position(position: Pos): Notify {
+    fun position(position: Position): Notify {
         this.position = position
         return this
     }
@@ -235,26 +273,25 @@ class Notify private constructor() {
     }
 
     /**
-     * Specifies what to do when the user clicks on the notification (in addition o the notification hiding, which happens whenever the
-     * notification is clicked on). This does not apply when clicking on the "close" button
+     * Called when the notification is closed, either via close button or via close()
      */
-    fun onAction(onAction: Notify.()->Unit): Notify {
-        onGeneralAreaClickAction = onAction
+    fun onCloseAction(onAction: Notify.()->Unit): Notify {
+        onCloseAction = onAction
         return this
     }
 
     /**
-     * Specifies that the notification should use the built-in dark styling, rather than the default, light-gray notification style.
+     * Called when the "general area" (but specifically not the "close button") is clicked.
      */
-    fun darkStyle(): Notify {
-        isDark = true
+    fun onClickAction(onAction: Notify.()->Unit): Notify {
+        onClickAction = onAction
         return this
     }
 
     /**
      * Specifies what the theme should be, if other than the default. This will always take precedence over the defaults.
      */
-    fun text(theme: Theme?): Notify {
+    fun theme(theme: Theme): Notify {
         this.theme = theme
         return this
     }
@@ -272,7 +309,7 @@ class Notify private constructor() {
      */
     fun showWarning() {
         name = DIALOG_WARNING
-        icon = getImage(DIALOG_WARNING)
+        image = getImage(DIALOG_WARNING)
         show()
     }
 
@@ -281,7 +318,7 @@ class Notify private constructor() {
      */
     fun showInformation() {
         name = DIALOG_INFORMATION
-        icon = getImage(DIALOG_INFORMATION)
+        image = getImage(DIALOG_INFORMATION)
         show()
     }
 
@@ -290,7 +327,7 @@ class Notify private constructor() {
      */
     fun showError() {
         name = DIALOG_ERROR
-        icon = getImage(DIALOG_ERROR)
+        image = getImage(DIALOG_ERROR)
         show()
     }
 
@@ -299,7 +336,7 @@ class Notify private constructor() {
      */
     fun showConfirm() {
         name = DIALOG_CONFIRM
-        icon = getImage(DIALOG_CONFIRM)
+        image = getImage(DIALOG_CONFIRM)
         show()
     }
 
@@ -308,39 +345,40 @@ class Notify private constructor() {
      * ignored.
      */
     fun show() {
+        val notify = this@Notify
+
         // must be done in the swing EDT
         SwingUtil.invokeAndWaitQuietly {
-            val notify = this@Notify
-            val image = notify.icon
-            val theme = if (notify.theme != null) {
-                // use custom provided theme
-                notify.theme!!
+            val window = notify.attachedFrame
+            val shakeDuration = notify.shakeDurationInMillis
+            val shakeAmp = notify.shakeAmplitude
+
+            val notifyCanvas = NotifyCanvas(notify, notify.image, theme)
+
+            val notifyPopup: NotifyType
+            val look: LookAndFeel
+
+            if (window == null) {
+                notifyPopup = AsDesktop(notify, notifyCanvas)
+                look = LookAndFeel(notifyPopup, notifyCanvas, notify, LAFUtil.getGraphics(notify.screen), true)
             } else {
-                Theme(TITLE_TEXT_FONT, MAIN_TEXT_FONT, notify.isDark)
-            }
-            val window = appWindow
-
-            val notifyPopup = if (window == null) {
-                AsDesktop(notify, image, theme)
-            } else {
-                AsApplication(notify, image, window, theme)
+                notifyPopup = AsApplication(notify, notifyCanvas)
+                look = LookAndFeel(window, notifyCanvas, notify, window.bounds, false)
             }
 
-            notifyPopup.setVisible(true)
+            notifyPopup.setVisible(true, look)
 
-            if (shakeDurationInMillis > 0) {
-                notifyPopup.shake(notify.shakeDurationInMillis, notify.shakeAmplitude)
+            if (shakeDuration > 0) {
+                look.shake(shakeDuration, shakeAmp)
             }
 
             notify.notifyPopup = notifyPopup
+            notify.notifyLook = look
         }
-
-        // don't need to hang onto these.
-        icon = null
     }
 
     /**
-     * "shakes" the notification, to bring user attention to it.
+     * "Shakes" the notification, to bring user attention to it.
      *
      * @param durationInMillis now long it will shake
      * @param amplitude a measure of how much it needs to shake. 4 is a small amount of shaking, 10 is a lot.
@@ -348,9 +386,11 @@ class Notify private constructor() {
     fun shake(durationInMillis: Int, amplitude: Int): Notify {
         shakeDurationInMillis = durationInMillis
         shakeAmplitude = amplitude
-        if (notifyPopup != null) {
+
+        val popupLook = notifyLook
+        if (popupLook != null) {
             // must be done in the swing EDT
-            SwingUtil.invokeLater { notifyPopup!!.shake(durationInMillis, amplitude) }
+            SwingUtil.invokeLater { popupLook.shake(durationInMillis, amplitude) }
         }
         return this
     }
@@ -359,19 +399,22 @@ class Notify private constructor() {
      * Closes the notification. Particularly useful if it's an "infinite" duration notification.
      */
     fun close() {
-        if (notifyPopup == null) {
-            throw NullPointerException("NotifyPopup")
+        val popup = notifyPopup
+        val look = notifyLook
+        if (popup !== null && look != null) {
+            // must be done in the swing EDT
+            SwingUtil.invokeLater {
+                look.close()
+                popup.close()
+            }
         }
-
-        // must be done in the swing EDT
-        SwingUtil.invokeLater { notifyPopup!!.close() }
     }
 
     /**
      * Specifies which screen to display on. If <0, it will show on screen 0. If > max-screens, it will show on the last screen.
      */
     fun setScreen(screenNumber: Int): Notify {
-        this.screenNumber = screenNumber
+        this.screen = screenNumber
         return this
     }
 
@@ -379,14 +422,21 @@ class Notify private constructor() {
      * Attaches this notification to a specific JFrame, instead of having a global notification
      */
     fun attach(frame: JFrame?): Notify {
-        appWindow = frame
+        attachedFrame = frame
         return this
     }
 
-    // called when this notification is closed.
-    fun onClose() {
+
+
+    // called when this notification is closed. called in the swing EDT!
+    internal fun onClose() {
+        this.notifyPopup!!.close()
+        this.onCloseAction.invoke(this)
         notifyPopup = null
+        notifyLook = null
     }
 
-
+    internal fun onClickAction() {
+        this.onClickAction.invoke(this)
+    }
 }

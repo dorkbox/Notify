@@ -22,7 +22,7 @@ internal class WindowAdapter : WindowAdapter() {
     override fun windowClosing(e: WindowEvent) {
         if (e.newState != WindowEvent.WINDOW_CLOSED) {
             val source = e.source as AsDesktop
-            source.close()
+            source.notification.close()
         }
     }
 

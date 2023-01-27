@@ -15,22 +15,15 @@
  */
 package dorkbox.notify
 
-import dorkbox.util.ScreenUtil
-import dorkbox.util.SwingUtil
 import java.awt.Dimension
-import java.awt.GraphicsEnvironment
-import java.awt.MouseInfo
-import javax.swing.ImageIcon
 import javax.swing.JWindow
 
 // we can't use regular popup, because if we have no owner, it won't work!
 // instead, we just create a JWindow and use it to hold our content
-class AsDesktop internal constructor(private val notification: Notify, image: ImageIcon?, theme: Theme) : JWindow(), INotify {
+internal class AsDesktop internal constructor(val notification: Notify, notifyCanvas: NotifyCanvas) : JWindow(), NotifyType {
     companion object {
         private const val serialVersionUID = 1L
     }
-
-    private val look: LookAndFeel
 
     // this is on the swing EDT
     init {
@@ -43,49 +36,10 @@ class AsDesktop internal constructor(private val notification: Notify, image: Im
         setSize(NotifyCanvas.WIDTH, NotifyCanvas.HEIGHT)
         setLocation(Short.MIN_VALUE.toInt(), Short.MIN_VALUE.toInt())
 
-        val device = if (notification.screenNumber == Short.MIN_VALUE.toInt()) {
-            // set screen position based on mouse
-            val mouseLocation = MouseInfo.getPointerInfo().location
-            ScreenUtil.getMonitorAtLocation(mouseLocation)
-        } else {
-            // set screen position based on specified screen
-            var screenNumber = notification.screenNumber
-            val ge = GraphicsEnvironment.getLocalGraphicsEnvironment()
-            val screenDevices = ge.screenDevices
-
-            if (screenNumber < 0) {
-                screenNumber = 0
-            } else if (screenNumber > screenDevices.size - 1) {
-                screenNumber = screenDevices.size - 1
-            }
-
-            screenDevices[screenNumber]
-        }
-
-        val bounds = device.defaultConfiguration.bounds
-
-
-        val notifyCanvas = NotifyCanvas(this, notification, image, theme)
         contentPane.add(notifyCanvas)
-
-        look = LookAndFeel(this, this, notifyCanvas, notification, bounds, true)
     }
 
-    override fun onClick(x: Int, y: Int) {
-        look.onClick(x, y)
-    }
-
-    /**
-     * Shakes the popup
-     *
-     * @param durationInMillis now long it will shake
-     * @param amplitude a measure of how much it needs to shake. 4 is a small amount of shaking, 10 is a lot.
-     */
-    override fun shake(durationInMillis: Int, amplitude: Int) {
-        look.shake(durationInMillis, amplitude)
-    }
-
-    override fun setVisible(visible: Boolean) {
+    override fun setVisible(visible: Boolean, look: LookAndFeel) {
         // was it already visible?
         if (visible == isVisible) {
             // prevent "double setting" visible state
@@ -103,19 +57,10 @@ class AsDesktop internal constructor(private val notification: Notify, image: Im
         }
     }
 
-    // setVisible(false) with any extra logic
-    fun doHide() {
-        super.setVisible(false)
-    }
-
+    // called on the Swing EDT
     override fun close() {
-        // this must happen in the Swing EDT. This is usually called by the active renderer
-        SwingUtil.invokeLater {
-            doHide()
-            look.close()
-            removeAll()
-            dispose()
-            notification.onClose()
-        }
+        super.setVisible(false)
+        removeAll()
+        dispose()
     }
 }
