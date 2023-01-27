@@ -13,86 +13,66 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package dorkbox.notify;
+package dorkbox.notify
 
-import java.awt.Dimension;
-import java.awt.GraphicsDevice;
-import java.awt.GraphicsEnvironment;
-import java.awt.MouseInfo;
-import java.awt.Point;
-import java.awt.Rectangle;
-
-import javax.swing.ImageIcon;
-import javax.swing.JWindow;
-
-import dorkbox.util.ScreenUtil;
-import dorkbox.util.SwingUtil;
+import dorkbox.util.ScreenUtil
+import dorkbox.util.SwingUtil
+import java.awt.Dimension
+import java.awt.GraphicsEnvironment
+import java.awt.MouseInfo
+import javax.swing.ImageIcon
+import javax.swing.JWindow
 
 // we can't use regular popup, because if we have no owner, it won't work!
 // instead, we just create a JWindow and use it to hold our content
-@SuppressWarnings({"Duplicates", "FieldCanBeLocal", "WeakerAccess", "DanglingJavadoc"})
-public
-class AsDesktop extends JWindow implements INotify {
-    private static final long serialVersionUID = 1L;
-
-    private final LookAndFeel look;
-    private final Notify notification;
-
-
-    // this is on the swing EDT
-    @SuppressWarnings("NumericCastThatLosesPrecision")
-    AsDesktop(final Notify notification, final ImageIcon image, final Theme theme) {
-        this.notification = notification;
-
-        setAlwaysOnTop(true);
-
-        final Dimension preferredSize = new Dimension(WIDTH, HEIGHT);
-        setPreferredSize(preferredSize);
-        setMaximumSize(preferredSize);
-        setMinimumSize(preferredSize);
-        setSize(NotifyCanvas.WIDTH, NotifyCanvas.HEIGHT);
-        setLocation(Short.MIN_VALUE, Short.MIN_VALUE);
-
-        Rectangle bounds;
-        GraphicsDevice device;
-
-        if (notification.screenNumber == Short.MIN_VALUE) {
-            // set screen position based on mouse
-            Point mouseLocation = MouseInfo.getPointerInfo()
-                                           .getLocation();
-
-            device = ScreenUtil.getMonitorAtLocation(mouseLocation);
-        }
-        else {
-            // set screen position based on specified screen
-            int screenNumber = notification.screenNumber;
-            GraphicsEnvironment ge = GraphicsEnvironment.getLocalGraphicsEnvironment();
-            GraphicsDevice screenDevices[] = ge.getScreenDevices();
-
-            if (screenNumber < 0) {
-                screenNumber = 0;
-            }
-            else if (screenNumber > screenDevices.length - 1) {
-                screenNumber = screenDevices.length - 1;
-            }
-
-            device = screenDevices[screenNumber];
-        }
-
-        bounds = device.getDefaultConfiguration()
-                       .getBounds();
-
-
-        NotifyCanvas notifyCanvas = new NotifyCanvas(this, notification, image, theme);
-        getContentPane().add(notifyCanvas);
-
-        look = new LookAndFeel(this, this, notifyCanvas, notification, bounds, true);
+class AsDesktop internal constructor(private val notification: Notify, image: ImageIcon?, theme: Theme) : JWindow(), INotify {
+    companion object {
+        private const val serialVersionUID = 1L
     }
 
-    @Override
-    public
-    void onClick(final int x, final int y) {
-        look.onClick(x, y);
+    private val look: LookAndFeel
+
+    // this is on the swing EDT
+    init {
+        isAlwaysOnTop = true
+
+        preferredSize = Dimension(WIDTH, HEIGHT)
+        maximumSize = preferredSize
+        minimumSize = preferredSize
+
+        setSize(NotifyCanvas.WIDTH, NotifyCanvas.HEIGHT)
+        setLocation(Short.MIN_VALUE.toInt(), Short.MIN_VALUE.toInt())
+
+        val device = if (notification.screenNumber == Short.MIN_VALUE.toInt()) {
+            // set screen position based on mouse
+            val mouseLocation = MouseInfo.getPointerInfo().location
+            ScreenUtil.getMonitorAtLocation(mouseLocation)
+        } else {
+            // set screen position based on specified screen
+            var screenNumber = notification.screenNumber
+            val ge = GraphicsEnvironment.getLocalGraphicsEnvironment()
+            val screenDevices = ge.screenDevices
+
+            if (screenNumber < 0) {
+                screenNumber = 0
+            } else if (screenNumber > screenDevices.size - 1) {
+                screenNumber = screenDevices.size - 1
+            }
+
+            screenDevices[screenNumber]
+        }
+
+        val bounds = device.defaultConfiguration.bounds
+
+
+        val notifyCanvas = NotifyCanvas(this, notification, image, theme)
+        contentPane.add(notifyCanvas)
+
+        look = LookAndFeel(this, this, notifyCanvas, notification, bounds, true)
+    }
+
+    override fun onClick(x: Int, y: Int) {
+        look.onClick(x, y)
     }
 
     /**
@@ -101,55 +81,41 @@ class AsDesktop extends JWindow implements INotify {
      * @param durationInMillis now long it will shake
      * @param amplitude a measure of how much it needs to shake. 4 is a small amount of shaking, 10 is a lot.
      */
-    @Override
-    public
-    void shake(final int durationInMillis, final int amplitude) {
-        look.shake(durationInMillis, amplitude);
+    override fun shake(durationInMillis: Int, amplitude: Int) {
+        look.shake(durationInMillis, amplitude)
     }
 
-    @Override
-    public
-    void setVisible(final boolean visible) {
+    override fun setVisible(visible: Boolean) {
         // was it already visible?
-        if (visible == isVisible()) {
+        if (visible == isVisible) {
             // prevent "double setting" visible state
-            return;
+            return
         }
 
         // this is because the order of operations are different based upon visibility.
-        look.updatePositionsPre(visible);
-
-        super.setVisible(visible);
+        look.updatePositionsPre(visible)
+        super.setVisible(visible)
 
         // this is because the order of operations are different based upon visibility.
-        look.updatePositionsPost(visible);
-
+        look.updatePositionsPost(visible)
         if (visible) {
-            this.toFront();
+            toFront()
         }
     }
 
     // setVisible(false) with any extra logic
-    void doHide() {
-        super.setVisible(false);
+    fun doHide() {
+        super.setVisible(false)
     }
 
-    @Override
-    public
-    void close() {
+    override fun close() {
         // this must happen in the Swing EDT. This is usually called by the active renderer
-        SwingUtil.invokeLater(new Runnable() {
-            @Override
-            public
-            void run() {
-                doHide();
-                look.close();
-
-                removeAll();
-                dispose();
-
-                notification.onClose();
-            }
-        });
+        SwingUtil.invokeLater {
+            doHide()
+            look.close()
+            removeAll()
+            dispose()
+            notification.onClose()
+        }
     }
 }

@@ -13,88 +13,56 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package dorkbox.notify;
+package dorkbox.notify
 
-import java.awt.BasicStroke;
-import java.awt.Canvas;
-import java.awt.Color;
-import java.awt.Dimension;
-import java.awt.Graphics;
-import java.awt.Graphics2D;
-import java.awt.Point;
-import java.awt.RenderingHints;
-import java.awt.Stroke;
-import java.awt.image.BufferedImage;
+import java.awt.BasicStroke
+import java.awt.Canvas
+import java.awt.Color
+import java.awt.Dimension
+import java.awt.Graphics
+import java.awt.Graphics2D
+import java.awt.RenderingHints
+import java.awt.Stroke
+import java.awt.image.BufferedImage
+import javax.swing.ImageIcon
+import javax.swing.JLabel
 
-import javax.swing.ImageIcon;
-import javax.swing.JLabel;
+internal class NotifyCanvas(
+    val parent: INotify,
+    private val notification: Notify,
+    private val imageIcon: ImageIcon?,
+    private val theme: Theme
+) : Canvas() {
 
-@SuppressWarnings("FieldCanBeLocal")
-class NotifyCanvas extends Canvas {
-    private static final Stroke stroke = new BasicStroke(2);
-    private static final int closeX = 282;
-    private static final int closeY = 2;
-
-    private static final int Y_1 = closeY + 5;
-    private static final int X_1 = closeX + 5;
-    private static final int Y_2 = closeY + 11;
-    private static final int X_2 = closeX + 11;
-
-    static final int WIDTH = 300;
-    static final int HEIGHT = 87;
-    private static final int PROGRESS_HEIGHT = HEIGHT - 2;
-
-    private final boolean showCloseButton;
-    private BufferedImage cachedImage;
-    private final Notify notification;
-    private final ImageIcon imageIcon;
+    private val showCloseButton: Boolean
+    private var cachedImage: BufferedImage
 
     // for the progress bar. we directly draw this onscreen
     // non-volatile because it's always accessed in the active render thread
-    private int progress = 0;
+    var progress = 0
 
-    private final Theme theme;
-    final INotify parent;
+    init {
+        val preferredSize = Dimension(WIDTH, HEIGHT)
+        setPreferredSize(preferredSize)
+        maximumSize = preferredSize
+        minimumSize = preferredSize
+        setSize(WIDTH, HEIGHT)
 
-
-    NotifyCanvas(final INotify parent, final Notify notification, final ImageIcon imageIcon, final Theme theme) {
-        this.parent = parent;
-        this.notification = notification;
-        this.imageIcon = imageIcon;
-        this.theme = theme;
-
-        final Dimension preferredSize = new Dimension(WIDTH, HEIGHT);
-        setPreferredSize(preferredSize);
-        setMaximumSize(preferredSize);
-        setMinimumSize(preferredSize);
-        setSize(WIDTH, HEIGHT);
-
-        setFocusable(false);
-
-        setBackground(this.theme.panel_BG);
-        showCloseButton = !notification.hideCloseButton;
+        isFocusable = false
+        background = theme.panel_BG
+        showCloseButton = !notification.hideCloseButton
 
         // now we setup the rendering of the image
-        cachedImage = renderBackgroundInfo(notification.title, notification.text, this.theme, this.imageIcon);
+        cachedImage = renderBackgroundInfo(notification.title, notification.text, theme, imageIcon)
     }
 
-    void setProgress(final int progress) {
-        this.progress = progress;
-    }
-
-    int getProgress() {
-        return progress;
-    }
-
-    @Override
-    public
-    void paint(final Graphics g) {
+    override fun paint(g: Graphics) {
         // we cache the text + image (to another image), and then always render the close + progressbar
 
         // use our cached image, so we don't have to re-render text/background/etc
         try {
-            g.drawImage(cachedImage, 0, 0, null);
-        } catch (Exception ignored) {
+            g.drawImage(cachedImage, 0, 0, null)
+        } catch (ignored: Exception) {
             // have also seen (happened after screen/PC was "woken up", in Xubuntu 16.04):
             // java.lang.ClassCastException:sun.awt.image.BufImgSurfaceData cannot be cast to sun.java2d.xr.XRSurfaceData at sun.java2d.xr.XRPMBlitLoops.cacheToTmpSurface(XRPMBlitLoops.java:148)
             // at sun.java2d.xr.XrSwToPMBlit.Blit(XRPMBlitLoops.java:356)
@@ -110,130 +78,138 @@ class NotifyCanvas extends Canvas {
             // at dorkbox.notify.NotifyCanvas.paint(NotifyCanvas.java:92)
 
             // redo the image
-            cachedImage = renderBackgroundInfo(notification.title, notification.text, this.theme, imageIcon);
+            cachedImage = renderBackgroundInfo(notification.title, notification.text, theme, imageIcon)
 
             // try to draw again
             try {
-                g.drawImage(cachedImage, 0, 0, null);
-            } catch (Exception ignored2) {
+                g.drawImage(cachedImage, 0, 0, null)
+            } catch (ignored2: Exception) {
             }
         }
 
         // the progress bar and close button are the only things that can change, so we always draw them every time
-        Graphics2D g2 = (Graphics2D) g.create();
+        val g2 = g.create() as Graphics2D
         try {
             if (showCloseButton) {
                 // manually draw the close button
-                Graphics2D g3 = (Graphics2D) g.create();
+                val g3 = g.create() as Graphics2D
+                g3.color = theme.panel_BG
+                g3.stroke = stroke
 
-                g3.setColor(theme.panel_BG);
-                g3.setStroke(stroke);
+                val p = mousePosition
 
-                final Point p = getMousePosition();
                 // reasonable position for detecting mouse over
                 if (p != null && p.getX() >= 280 && p.getY() <= 20) {
-                    g3.setColor(Color.RED);
-                }
-                else {
-                    g3.setColor(theme.closeX_FG);
+                    g3.color = Color.RED
+                } else {
+                    g3.color = theme.closeX_FG
                 }
 
                 // draw the X
-                g3.drawLine(X_1, Y_1, X_2, Y_2);
-                g3.drawLine(X_2, Y_1, X_1, Y_2);
+                g3.drawLine(X_1, Y_1, X_2, Y_2)
+                g3.drawLine(X_2, Y_1, X_1, Y_2)
             }
 
             // draw the progress bar along the bottom
-            g2.setColor(theme.progress_FG);
-            g2.fillRect(0, PROGRESS_HEIGHT, progress, 2);
+            g2.color = theme.progress_FG
+            g2.fillRect(0, PROGRESS_HEIGHT, progress, 2)
         } finally {
-            g2.dispose();
+            g2.dispose()
         }
     }
 
     /**
      * @return TRUE if we were over the 'X' or FALSE if the click was in the general area (and not over the 'X').
      */
-    boolean isCloseButton(final int x, final int y) {
-        return showCloseButton && x >= 280 && y <= 20;
+    fun isCloseButton(x: Int, y: Int): Boolean {
+        return showCloseButton && x >= 280 && y <= 20
     }
 
-    private static
-    BufferedImage renderBackgroundInfo(final String title,
-                                       final String notificationText,
-                                       final Theme theme,
-                                       final ImageIcon imageIcon) {
+    companion object {
+        private val stroke: Stroke = BasicStroke(2f)
+
+        private const val closeX = 282
+        private const val closeY = 2
+
+        private const val Y_1 = closeY + 5
+        private const val X_1 = closeX + 5
+        private const val Y_2 = closeY + 11
+        private const val X_2 = closeX + 11
+
+        const val WIDTH = 300
+        const val HEIGHT = 87
+        private const val PROGRESS_HEIGHT = HEIGHT - 2
+        private fun renderBackgroundInfo(title: String, notificationText: String, theme: Theme, imageIcon: ImageIcon?): BufferedImage {
+
+            val image = BufferedImage(WIDTH, HEIGHT, BufferedImage.TYPE_INT_ARGB)
+            val g2 = image.createGraphics()
+
+            g2.setRenderingHint(RenderingHints.KEY_ALPHA_INTERPOLATION, RenderingHints.VALUE_ALPHA_INTERPOLATION_QUALITY)
+            g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
+            g2.setRenderingHint(RenderingHints.KEY_COLOR_RENDERING, RenderingHints.VALUE_COLOR_RENDER_QUALITY)
+            g2.setRenderingHint(RenderingHints.KEY_DITHERING, RenderingHints.VALUE_DITHER_ENABLE)
+            g2.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_ON)
+            g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR)
+            g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY)
+            g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE)
+
+            try {
+                g2.color = theme.panel_BG
+                g2.fillRect(0, 0, WIDTH, HEIGHT)
+
+                // Draw the title text
+                g2.color = theme.titleText_FG
+                g2.font = theme.titleTextFont
+                g2.drawString(title, 5, 20)
 
 
-        BufferedImage image = new BufferedImage(WIDTH, HEIGHT, BufferedImage.TYPE_INT_ARGB);
-        Graphics2D g2 = image.createGraphics();
-        g2.setRenderingHint(RenderingHints.KEY_ALPHA_INTERPOLATION, RenderingHints.VALUE_ALPHA_INTERPOLATION_QUALITY);
-        g2.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        g2.setRenderingHint(RenderingHints.KEY_COLOR_RENDERING, RenderingHints.VALUE_COLOR_RENDER_QUALITY);
-        g2.setRenderingHint(RenderingHints.KEY_DITHERING, RenderingHints.VALUE_DITHER_ENABLE);
-        g2.setRenderingHint(RenderingHints.KEY_FRACTIONALMETRICS, RenderingHints.VALUE_FRACTIONALMETRICS_ON);
-        g2.setRenderingHint(RenderingHints.KEY_INTERPOLATION, RenderingHints.VALUE_INTERPOLATION_BILINEAR);
-        g2.setRenderingHint(RenderingHints.KEY_RENDERING, RenderingHints.VALUE_RENDER_QUALITY);
-        g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE);
+                var posX = 10
+                val posY = -8
+                var textLengthLimit = 108
 
-        try {
-            g2.setColor(theme.panel_BG);
-            g2.fillRect(0, 0, WIDTH, HEIGHT);
+                // ICON
+                if (imageIcon != null) {
+                    textLengthLimit = 88
+                    posX = 60
+                    // Draw the image
+                    imageIcon.paintIcon(null, g2, 5, 30)
+                }
 
-            // Draw the title text
-            g2.setColor(theme.titleText_FG);
-            g2.setFont(theme.titleTextFont);
-            g2.drawString(title, 5, 20);
+                // Draw the main text
+                var length = notificationText.length
+                val text = StringBuilder(length)
+
+                // are we "html" already? just check for the starting tag and strip off END html tag
+                if (length >= 13 && notificationText.regionMatches(length - 7, "</html>", 0, 7, ignoreCase = true)) {
+                    text.append(notificationText)
+                    text.delete(text.length - 7, text.length)
+                    length -= 7
+                } else {
+                    text.append("<html>")
+                    text.append(notificationText)
+                }
+
+                // make sure the text is the correct length
+                if (length > textLengthLimit) {
+                    text.delete(6 + textLengthLimit, text.length)
+                    text.append("...")
+                }
+                text.append("</html>")
 
 
-            int posX = 10;
-            int posY = -8;
-            int textLengthLimit = 108;
+                val mainTextLabel = JLabel()
+                mainTextLabel.foreground = theme.mainText_FG
+                mainTextLabel.font = theme.mainTextFont
+                mainTextLabel.text = text.toString()
+                mainTextLabel.setBounds(0, 0, WIDTH - posX - 2, HEIGHT)
 
-            // ICON
-            if (imageIcon != null) {
-                textLengthLimit = 88;
-                posX = 60;
-                // Draw the image
-                imageIcon.paintIcon(null, g2, 5, 30);
+                g2.translate(posX, posY)
+                mainTextLabel.paint(g2)
+                g2.translate(-posX, -posY)
+            } finally {
+                g2.dispose()
             }
-
-            // Draw the main text
-            int length = notificationText.length();
-            StringBuilder text = new StringBuilder(length);
-
-            // are we "html" already? just check for the starting tag and strip off END html tag
-            if (length >= 13 && notificationText.regionMatches(true, length - 7, "</html>", 0, 7)) {
-                text.append(notificationText);
-                text.delete(text.length() - 7, text.length());
-
-                length -= 7;
-            }
-            else {
-                text.append("<html>");
-                text.append(notificationText);
-            }
-
-            // make sure the text is the correct length
-            if (length > textLengthLimit) {
-                text.delete(6 + textLengthLimit, text.length());
-                text.append("...");
-            }
-            text.append("</html>");
-
-            JLabel mainTextLabel = new JLabel();
-            mainTextLabel.setForeground(theme.mainText_FG);
-            mainTextLabel.setFont(theme.mainTextFont);
-            mainTextLabel.setText(text.toString());
-            mainTextLabel.setBounds(0, 0, WIDTH - posX - 2, HEIGHT);
-
-            g2.translate(posX, posY);
-            mainTextLabel.paint(g2);
-            g2.translate(-posX, -posY);
-        } finally {
-            g2.dispose();
+            return image
         }
-
-        return image;
     }
 }

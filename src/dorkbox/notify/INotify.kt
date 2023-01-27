@@ -13,15 +13,11 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package dorkbox.notify;
+package dorkbox.notify
 
-public
 interface INotify {
-    void close();
-
-    void shake(int durationInMillis, int amplitude);
-
-    void setVisible(boolean b);
-
-    void onClick(int x, int y);
+    fun close()
+    fun shake(durationInMillis: Int, amplitude: Int)
+    fun setVisible(visible: Boolean)
+    fun onClick(x: Int, y: Int)
 }

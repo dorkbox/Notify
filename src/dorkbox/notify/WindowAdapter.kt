@@ -13,31 +13,28 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package dorkbox.notify;
+package dorkbox.notify
 
-import java.awt.event.WindowEvent;
+import java.awt.event.WindowAdapter
+import java.awt.event.WindowEvent
 
-class WindowAdapter extends java.awt.event.WindowAdapter {
-    @Override
-    public
-    void windowClosing(WindowEvent e) {
-        if (e.getNewState() != WindowEvent.WINDOW_CLOSED) {
-            AsDesktop source = (AsDesktop) e.getSource();
-            source.close();
+internal class WindowAdapter : WindowAdapter() {
+    override fun windowClosing(e: WindowEvent) {
+        if (e.newState != WindowEvent.WINDOW_CLOSED) {
+            val source = e.source as AsDesktop
+            source.close()
         }
     }
 
-    @Override
-    public
-    void windowLostFocus(WindowEvent e) {
-        if (e.getNewState() != WindowEvent.WINDOW_CLOSED) {
-            AsDesktop source = (AsDesktop) e.getSource();
+    override fun windowLostFocus(e: WindowEvent) {
+        if (e.newState != WindowEvent.WINDOW_CLOSED) {
+            val source = e.source as AsDesktop
             // these don't work
-            //toFront();
-            //requestFocus();
-            //requestFocusInWindow();
-            source.setAlwaysOnTop(false);
-            source.setAlwaysOnTop(true);
+            //toFront()
+            //requestFocus()
+            //requestFocusInWindow()
+            source.isAlwaysOnTop = false
+            source.isAlwaysOnTop = true
         }
     }
 }

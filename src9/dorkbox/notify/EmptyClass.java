@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 dorkbox, llc
+ * Copyright 2021 dorkbox, llc
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,14 +13,12 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package dorkbox.notify
 
-import java.awt.event.MouseAdapter
-import java.awt.event.MouseEvent
+package dorkbox.notify;
 
-internal class ClickAdapter : MouseAdapter() {
-    override fun mouseReleased(e: MouseEvent) {
-        val parent = (e.source as NotifyCanvas).parent
-        parent.onClick(e.x, e.y)
-    }
-}
+/**
+ * Required for intellij to not complain regarding `module-info` for a multi-release jar.
+ * This file is completely ignored by the gradle build process
+ */
+public
+class EmptyClass {}

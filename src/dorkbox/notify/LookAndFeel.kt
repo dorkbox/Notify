@@ -13,500 +13,387 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package dorkbox.notify;
+package dorkbox.notify
 
-import java.awt.Point;
-import java.awt.Rectangle;
-import java.awt.Window;
-import java.awt.event.MouseAdapter;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Random;
+import dorkbox.swingActiveRender.ActionHandlerLong
+import dorkbox.swingActiveRender.SwingActiveRender
+import dorkbox.tweenEngine.Tween
+import dorkbox.tweenEngine.TweenCallback.Events.COMPLETE
+import dorkbox.tweenEngine.TweenEngine.Companion.create
+import dorkbox.tweenEngine.TweenEquations
+import dorkbox.util.ScreenUtil
+import java.awt.Point
+import java.awt.Rectangle
+import java.awt.Window
+import java.awt.event.MouseAdapter
+import java.util.*
 
-import dorkbox.swingActiveRender.ActionHandlerLong;
-import dorkbox.swingActiveRender.SwingActiveRender;
-import dorkbox.tweenEngine.BaseTween;
-import dorkbox.tweenEngine.Tween;
-import dorkbox.tweenEngine.TweenCallback;
-import dorkbox.tweenEngine.TweenEngine;
-import dorkbox.tweenEngine.TweenEquations;
-import dorkbox.util.ScreenUtil;
+internal class LookAndFeel(
+    private val notify: INotify,
+    private val parent: Window,
+    private val notifyCanvas: NotifyCanvas,
+    private val notification: Notify,
+    parentBounds: Rectangle,
+    private val isDesktopNotification: Boolean
+) {
+    companion object {
+        private val popups: MutableMap<String?, PopupList> = HashMap()
 
-@SuppressWarnings({"FieldCanBeLocal"})
-class LookAndFeel {
-    private static final Map<String, PopupList> popups = new HashMap<String, PopupList>();
+        // access is only from a single thread ever, so unsafe is preferred.
+        val animation = create().unsafe().build()
 
-    static final TweenEngine animation = TweenEngine.Companion.create()
-                                                    .unsafe()  // access is only from a single thread ever, so unsafe is preferred.
-                                                    .build();
+        val accessor = NotifyAccessor()
 
-    static final NotifyAccessor accessor = new NotifyAccessor();
-    private static final ActionHandlerLong frameStartHandler;
-
-
-    static {
         // this is for updating the tween engine during active-rendering
-        frameStartHandler = new ActionHandlerLong() {
-            @Override
-            public
-            void handle(final long deltaInNanos) {
-                LookAndFeel.animation.update(deltaInNanos);
+        private val frameStartHandler = ActionHandlerLong { deltaInNanos -> animation.update(deltaInNanos) }
+
+        const val SPACER = 10
+        const val MARGIN = 20
+
+        private val windowListener: java.awt.event.WindowAdapter = WindowAdapter()
+        private val mouseListener: MouseAdapter = ClickAdapter()
+        private val RANDOM = Random()
+        private val MOVE_DURATION = Notify.MOVE_DURATION
+
+        private fun getAnchorX(position: Pos, bounds: Rectangle, isDesktop: Boolean): Int {
+            // we use the screen that the mouse is currently on.
+            val startX = if (isDesktop) {
+                bounds.getX().toInt()
+            } else {
+                0
             }
-        };
+
+            val screenWidth = bounds.getWidth().toInt()
+            return when (position) {
+                Pos.TOP_LEFT, Pos.BOTTOM_LEFT -> MARGIN + startX
+                Pos.CENTER -> startX + screenWidth / 2 - NotifyCanvas.WIDTH / 2 - MARGIN / 2
+                Pos.TOP_RIGHT, Pos.BOTTOM_RIGHT -> startX + screenWidth - NotifyCanvas.WIDTH - MARGIN
+            }
+        }
+
+        private fun getAnchorY(position: Pos, bounds: Rectangle, isDesktop: Boolean): Int {
+            val startY = if (isDesktop) {
+                bounds.getY().toInt()
+            } else {
+                0
+            }
+
+            val screenHeight = bounds.getHeight().toInt()
+            return when (position) {
+                Pos.TOP_LEFT, Pos.TOP_RIGHT -> startY + MARGIN
+                Pos.CENTER -> startY + screenHeight / 2 - NotifyCanvas.HEIGHT / 2 - MARGIN / 2 - SPACER
+                Pos.BOTTOM_LEFT, Pos.BOTTOM_RIGHT -> if (isDesktop) {
+                    startY + screenHeight - NotifyCanvas.HEIGHT - MARGIN
+                } else {
+                             screenHeight - NotifyCanvas.HEIGHT - MARGIN - SPACER * 2
+                }
+            }
+        }
+
+        // only called on the swing EDT thread
+        private fun addPopupToMap(sourceLook: LookAndFeel) {
+            synchronized(popups) {
+                val id = sourceLook.idAndPosition
+                var looks = popups[id]
+                if (looks == null) {
+                    looks = PopupList()
+                    popups[id] = looks
+                }
+
+                val index = looks.size()
+                sourceLook.popupIndex = index
+
+                // the popups are ALL the same size!
+                // popups at TOP grow down, popups at BOTTOM grow up
+                val anchorX = sourceLook.anchorX
+                val anchorY = sourceLook.anchorY
+
+                val targetY = if (index == 0) {
+                    anchorY
+                } else {
+                    val growDown = growDown(sourceLook)
+                    if (sourceLook.isDesktopNotification && index == 1) {
+                        // have to adjust for offsets when the window-manager has a toolbar that consumes space and prevents overlap.
+                        // this is only done when the 2nd popup is added to the list
+                        looks.calculateOffset(growDown, anchorX, anchorY)
+                    }
+                    if (growDown) {
+                        anchorY + index * (NotifyCanvas.HEIGHT + SPACER) + looks.offsetY
+                    } else {
+                        anchorY - index * (NotifyCanvas.HEIGHT + SPACER) + looks.offsetY
+                    }
+                }
+
+                looks.add(sourceLook)
+                sourceLook.setLocation(anchorX, targetY)
+
+                if (sourceLook.hideAfterDurationInSeconds > 0 && sourceLook.hideTween == null) {
+                    // begin a timeline to get rid of the popup (default is 5 seconds)
+                    animation.to(sourceLook, NotifyAccessor.PROGRESS, accessor, sourceLook.hideAfterDurationInSeconds)
+                        .target(NotifyCanvas.WIDTH.toFloat())
+                        .ease(TweenEquations.Linear)
+                        .addCallback(COMPLETE) { sourceLook.notify.close() }
+                        .start()
+                }
+            }
+        }
+
+        // only called on the swing app or SwingActiveRender thread
+        private fun removePopupFromMap(sourceLook: LookAndFeel): Boolean {
+            val growDown = growDown(sourceLook)
+            var popupsAreEmpty: Boolean
+
+            synchronized(popups) {
+                popupsAreEmpty = popups.isEmpty()
+                val allLooks = popups[sourceLook.idAndPosition]
+
+                // there are two loops because it is necessary to cancel + remove all tweens BEFORE adding new ones.
+                var adjustPopupPosition = false
+                val iterator = allLooks!!.iterator()
+                while (iterator.hasNext()) {
+                    val look = iterator.next()
+                    if (look.tween != null) {
+                        look.tween!!.cancel() // cancel does its thing on the next tick of animation cycle
+                        look.tween = null
+                    }
+
+                    if (look === sourceLook) {
+                        if (look.hideTween != null) {
+                            look.hideTween!!.cancel()
+                            look.hideTween = null
+                        }
+                        adjustPopupPosition = true
+                        iterator.remove()
+                    }
+
+                    if (adjustPopupPosition) {
+                        look.popupIndex--
+                    }
+                }
+
+                // have to adjust for offsets when the window-manager has a toolbar that consumes space and prevents overlap.
+                val offsetY = allLooks.offsetY
+                for (index in 0 until allLooks.size()) {
+                    val look = allLooks[index]
+
+                    // the popups are ALL the same size!
+                    // popups at TOP grow down, popups at BOTTOM grow up
+                    val changedY = if (growDown) {
+                        look.anchorY + (look.popupIndex * (NotifyCanvas.HEIGHT + SPACER) + offsetY)
+                    } else {
+                        look.anchorY - (look.popupIndex * (NotifyCanvas.HEIGHT + SPACER) + offsetY)
+                    }
+
+                    // now animate that popup to its new location
+                    look.tween = animation
+                        .to(look, NotifyAccessor.Y_POS, accessor, MOVE_DURATION)
+                        .target(changedY.toFloat())
+                        .ease(TweenEquations.Linear)
+                        .addCallback(COMPLETE) {
+                            // make sure to remove the tween once it's done, otherwise .kill can do weird things.
+                            look.tween = null
+                        }
+                        .start()
+                }
+            }
+            return popupsAreEmpty
+        }
+
+        private fun growDown(look: LookAndFeel): Boolean {
+            return when (look.position) {
+                Pos.TOP_LEFT, Pos.TOP_RIGHT, Pos.CENTER -> true
+                else -> false
+            }
+        }
     }
 
-    static final int SPACER = 10;
-    static final int MARGIN = 20;
-
-    private static final java.awt.event.WindowAdapter windowListener = new WindowAdapter();
-    private static final MouseAdapter mouseListener = new ClickAdapter();
-
-    private static final Random RANDOM = new Random();
-
-    private static final float MOVE_DURATION = Notify.MOVE_DURATION;
-    private final boolean isDesktopNotification;
 
 
+    @Volatile
+    private var anchorX: Int
 
-    private volatile int anchorX;
-    private volatile int anchorY;
-
-
-    private final INotify notify;
-    private final Window parent;
-    private final NotifyCanvas notifyCanvas;
-
-    private final float hideAfterDurationInSeconds;
-    private final Pos position;
+    @Volatile
+    private var anchorY: Int
+    private val hideAfterDurationInSeconds: Float
+    private val position: Pos
 
     // this is used in combination with position, so that we can track which screen and what position a popup is in
-    private final String idAndPosition;
-    private int popupIndex;
+    private var idAndPosition: String? = null
+    private var popupIndex = 0
 
-    private volatile Tween tween = null;
-    private volatile Tween hideTween = null;
+    @Volatile
+    private var tween: Tween<*>? = null
 
-    private final ActionHandler<Notify> onGeneralAreaClickAction;
+    @Volatile
+    private var hideTween: Tween<*>? = null
+    private val onGeneralAreaClickAction = notification.onGeneralAreaClickAction // explicitly make a copy
 
-    LookAndFeel(final INotify notify, final Window parent,
-                final NotifyCanvas notifyCanvas,
-                final Notify notification,
-                final Rectangle parentBounds,
-                final boolean isDesktopNotification) {
-
-        this.notify = notify;
-        this.parent = parent;
-        this.notifyCanvas = notifyCanvas;
-        this.isDesktopNotification = isDesktopNotification;
-
-
+    init {
         if (isDesktopNotification) {
-            parent.addWindowListener(windowListener);
-        }
-        notifyCanvas.addMouseListener(mouseListener);
-
-        hideAfterDurationInSeconds = notification.hideAfterDurationInMillis / 1000.0F;
-        position = notification.position;
-
-        if (notification.onGeneralAreaClickAction != null) {
-            onGeneralAreaClickAction = new ActionHandler<Notify>() {
-                @Override
-                public
-                void handle(final Notify value) {
-                    notification.onGeneralAreaClickAction.handle(notification);
-                }
-            };
-        }
-        else {
-            onGeneralAreaClickAction = null;
+            parent.addWindowListener(windowListener)
         }
 
-        if (isDesktopNotification) {
-            Point point = new Point((int) parentBounds.getX(), ((int) parentBounds.getY()));
-            idAndPosition = ScreenUtil.getMonitorNumberAtLocation(point) + ":" + position;
+        notifyCanvas.addMouseListener(mouseListener)
+        hideAfterDurationInSeconds = notification.hideAfterDurationInMillis / 1000.0f
+        position = notification.position
+
+        idAndPosition = if (isDesktopNotification) {
+            val point = Point(parentBounds.getX().toInt(), parentBounds.getY().toInt())
+            ScreenUtil.getMonitorNumberAtLocation(point).toString() + ":" + position
         } else {
-            idAndPosition = parent.getName() + ":" + position;
+            parent.name + ":" + position
         }
 
-
-        anchorX = getAnchorX(position, parentBounds, isDesktopNotification);
-        anchorY = getAnchorY(position, parentBounds, isDesktopNotification);
+        anchorX = getAnchorX(position, parentBounds, isDesktopNotification)
+        anchorY = getAnchorY(position, parentBounds, isDesktopNotification)
     }
 
-    void onClick(final int x, final int y) {
+    fun onClick(x: Int, y: Int) {
         // Check - we were over the 'X' (and thus no notify), or was it in the general area?
 
         // reasonable position for detecting mouse over
         if (!notifyCanvas.isCloseButton(x, y)) {
             // only call the general click handler IF we click in the general area!
-            if (onGeneralAreaClickAction != null) {
-                onGeneralAreaClickAction.handle(null);
-            }
+            onGeneralAreaClickAction.invoke(notification)
         }
 
         // we always close the notification popup
-        notify.close();
+        notify.close()
     }
 
     // only called from an application
-    void reLayout(final Rectangle bounds) {
+    fun reLayout(bounds: Rectangle) {
         // when the parent window moves, we stop all animation and snap the popup into place. This simplifies logic greatly
-        anchorX = getAnchorX(position, bounds, isDesktopNotification);
-        anchorY = getAnchorY(position, bounds, isDesktopNotification);
+        anchorX = getAnchorX(position, bounds, isDesktopNotification)
+        anchorY = getAnchorY(position, bounds, isDesktopNotification)
 
-        boolean growDown = growDown(this);
+        val growDown = growDown(this)
 
         if (tween != null) {
-            tween.cancel(); // cancel does its thing on the next tick of animation cycle
-            tween = null;
+            tween!!.cancel() // cancel does its thing on the next tick of animation cycle
+            tween = null
         }
 
-        int changedY;
+
+        var changedY: Int
         if (popupIndex == 0) {
-            changedY = anchorY;
-        }
-        else {
-            synchronized (popups) {
-                String id = idAndPosition;
-
-                PopupList looks = popups.get(id);
-                if (looks != null) {
+            changedY = anchorY
+        } else {
+            synchronized(popups) {
+                val id = idAndPosition
+                val looks = popups[id]
+                changedY = if (looks != null) {
                     if (growDown) {
-                        changedY = anchorY + (popupIndex * (NotifyCanvas.HEIGHT + SPACER));
+                        anchorY + popupIndex * (NotifyCanvas.HEIGHT + SPACER)
+                    } else {
+                        anchorY - popupIndex * (NotifyCanvas.HEIGHT + SPACER)
                     }
-                    else {
-                        changedY = anchorY - (popupIndex * (NotifyCanvas.HEIGHT + SPACER));
-                    }
-                }
-                else {
-                    changedY = anchorY;
+                } else {
+                    anchorY
                 }
             }
         }
 
-        setLocation(anchorX, changedY);
+        setLocation(anchorX, changedY)
     }
 
-    void close() {
+    fun close() {
         if (hideTween != null) {
-            hideTween.cancel();
-            hideTween = null;
+            hideTween!!.cancel()
+            hideTween = null
         }
 
         if (tween != null) {
-            tween.cancel();
-            tween = null;
+            tween!!.cancel()
+            tween = null
         }
 
         if (isDesktopNotification) {
-            parent.removeWindowListener(windowListener);
+            parent.removeWindowListener(windowListener)
         }
-        parent.removeMouseListener(mouseListener);
 
-        updatePositionsPre(false);
-        updatePositionsPost(false);
+        parent.removeMouseListener(mouseListener)
+        updatePositionsPre(false)
+        updatePositionsPost(false)
     }
 
-    void shake(final int durationInMillis, final int amplitude) {
-        int i1 = RANDOM.nextInt((amplitude << 2) + 1) - amplitude;
-        int i2 = RANDOM.nextInt((amplitude << 2) + 1) - amplitude;
-
-        i1 = i1 >> 2;
-        i2 = i2 >> 2;
+    fun shake(durationInMillis: Int, amplitude: Int) {
+        var i1 = RANDOM.nextInt((amplitude shl 2) + 1) - amplitude
+        var i2 = RANDOM.nextInt((amplitude shl 2) + 1) - amplitude
+        i1 = i1 shr 2
+        i2 = i2 shr 2
 
         // make sure it always moves by some amount
         if (i1 < 0) {
-            i1 -= amplitude >> 2;
-        }
-        else {
-            i1 += amplitude >> 2;
-        }
-
-        if (i2 < 0) {
-            i2 -= amplitude >> 2;
-        }
-        else {
-            i2 += amplitude >> 2;
-        }
-
-        int count = durationInMillis / 50;
-        // make sure we always end the animation where we start
-        if ((count & 1) == 0) {
-            count++;
-        }
-
-        animation.to(this, NotifyAccessor.X_Y_POS, accessor, 0.05F)
-                 .targetRelative(i1, i2)
-                 .repeatAutoReverse(count, 0)
-                 .ease(TweenEquations.Linear)
-                 .start();
-    }
-
-    void setY(final int y) {
-        if (isDesktopNotification) {
-            parent.setLocation(parent.getX(), y);
-        }
-        else {
-            notifyCanvas.setLocation(notifyCanvas.getX(), y);
-        }
-    }
-
-    int getY() {
-        if (isDesktopNotification) {
-            return parent.getY();
-        }
-        else {
-            return notifyCanvas.getY();
-        }
-    }
-
-    int getX() {
-        if (isDesktopNotification) {
-            return parent.getX();
-        }
-        else {
-            return notifyCanvas.getX();
-        }
-    }
-
-    void setLocation(final int x, final int y) {
-        if (isDesktopNotification) {
-            parent.setLocation(x, y);
-        }
-        else {
-            notifyCanvas.setLocation(x, y);
-        }
-    }
-
-    private static
-    int getAnchorX(final Pos position, final Rectangle bounds, boolean isDesktop) {
-        // we use the screen that the mouse is currently on.
-        final int startX;
-        if (isDesktop) {
-            startX = (int) bounds.getX();
+            i1 -= amplitude shr 2
         } else {
-            startX = 0;
+            i1 += amplitude shr 2
+        }
+        if (i2 < 0) {
+            i2 -= amplitude shr 2
+        } else {
+            i2 += amplitude shr 2
         }
 
-        final int screenWidth = (int) bounds.getWidth();
-
-        // determine location for the popup
-        // get anchorX
-        switch (position) {
-            case TOP_LEFT:
-            case BOTTOM_LEFT:
-                return MARGIN + startX;
-
-            case CENTER:
-                return startX + (screenWidth / 2) - NotifyCanvas.WIDTH / 2 - MARGIN / 2;
-
-            case TOP_RIGHT:
-            case BOTTOM_RIGHT:
-                return startX + screenWidth - NotifyCanvas.WIDTH - MARGIN;
-
-            default:
-                throw new RuntimeException("Unknown position. '" + position + "'");
+        var count = durationInMillis / 50
+        // make sure we always end the animation where we start
+        if (count and 1 == 0) {
+            count++
         }
+
+        animation
+            .to(this, NotifyAccessor.X_Y_POS, accessor, 0.05f)
+            .targetRelative(i1.toFloat(), i2.toFloat())
+            .repeatAutoReverse(count, 0f)
+            .ease(TweenEquations.Linear)
+            .start()
     }
 
-    private static
-    int getAnchorY(final Pos position, final Rectangle bounds, final boolean isDesktop) {
-        final int startY;
-        if (isDesktop) {
-            startY = (int) bounds.getY();
+    var y: Int
+        get() = if (isDesktopNotification) {
+            parent.y
+        } else {
+            notifyCanvas.y
         }
-        else {
-            startY = 0;
-        }
-        final int screenHeight = (int) bounds.getHeight();
-
-        // get anchorY
-        switch (position) {
-            case TOP_LEFT:
-            case TOP_RIGHT:
-                return startY + MARGIN;
-
-            case CENTER:
-                return startY + (screenHeight / 2) - NotifyCanvas.HEIGHT / 2 - MARGIN / 2 - SPACER;
-
-            case BOTTOM_LEFT:
-            case BOTTOM_RIGHT:
-                if (isDesktop) {
-                    return startY + screenHeight - NotifyCanvas.HEIGHT - MARGIN;
-                } else {
-                    return startY + screenHeight - NotifyCanvas.HEIGHT - MARGIN - SPACER * 2;
-                }
-
-            default:
-                throw new RuntimeException("Unknown position. '" + position + "'");
-        }
-    }
-
-    // only called on the swing EDT thread
-    private static
-    void addPopupToMap(final LookAndFeel sourceLook) {
-        synchronized (popups) {
-            String id = sourceLook.idAndPosition;
-
-            PopupList looks = popups.get(id);
-            if (looks == null) {
-                looks = new PopupList();
-                popups.put(id, looks);
-            }
-            final int index = looks.size();
-            sourceLook.popupIndex = index;
-
-            // the popups are ALL the same size!
-            // popups at TOP grow down, popups at BOTTOM grow up
-            int targetY;
-            int anchorX = sourceLook.anchorX;
-            int anchorY = sourceLook.anchorY;
-
-            if (index == 0) {
-                targetY = anchorY;
+        set(y) {
+            if (isDesktopNotification) {
+                parent.setLocation(parent.x, y)
             } else {
-                boolean growDown = growDown(sourceLook);
-
-                if (sourceLook.isDesktopNotification && index == 1) {
-                    // have to adjust for offsets when the window-manager has a toolbar that consumes space and prevents overlap.
-                    // this is only done when the 2nd popup is added to the list
-                    looks.calculateOffset(growDown, anchorX, anchorY);
-                }
-
-                if (growDown) {
-                    targetY = anchorY + (index * (NotifyCanvas.HEIGHT + SPACER)) + looks.getOffsetY();
-                }
-                else {
-                    targetY = anchorY - (index * (NotifyCanvas.HEIGHT + SPACER)) + looks.getOffsetY();
-                }
-
-            }
-
-            looks.add(sourceLook);
-            sourceLook.setLocation(anchorX, targetY);
-
-            if (sourceLook.hideAfterDurationInSeconds > 0 && sourceLook.hideTween == null) {
-                // begin a timeline to get rid of the popup (default is 5 seconds)
-                animation.to(sourceLook, NotifyAccessor.PROGRESS, accessor, sourceLook.hideAfterDurationInSeconds)
-                         .target(NotifyCanvas.WIDTH)
-                         .ease(TweenEquations.Linear)
-                         .addCallback(new TweenCallback() {
-                             @Override
-                             public void onEvent(int type, BaseTween source) {
-                                 if (type == Events.COMPLETE) {
-                                     sourceLook.notify.close();
-                                 }
-                              }
-                         })
-                         .start();
-            }
-        }
-    }
-
-    // only called on the swing app or SwingActiveRender thread
-    private static
-    boolean removePopupFromMap(final LookAndFeel sourceLook) {
-        boolean growDown = growDown(sourceLook);
-        boolean popupsAreEmpty;
-
-        synchronized (popups) {
-            popupsAreEmpty = popups.isEmpty();
-            final PopupList allLooks = popups.get(sourceLook.idAndPosition);
-
-            // there are two loops because it is necessary to cancel + remove all tweens BEFORE adding new ones.
-            boolean adjustPopupPosition = false;
-            for (Iterator<LookAndFeel> iterator = allLooks.iterator(); iterator.hasNext(); ) {
-                final LookAndFeel look = iterator.next();
-
-                if (look.tween != null) {
-                    look.tween.cancel(); // cancel does its thing on the next tick of animation cycle
-                    look.tween = null;
-                }
-
-                if (look == sourceLook) {
-                    if (look.hideTween != null) {
-                        look.hideTween.cancel();
-                        look.hideTween = null;
-                    }
-
-                    adjustPopupPosition = true;
-                    iterator.remove();
-                }
-
-                if (adjustPopupPosition) {
-                    look.popupIndex--;
-                }
-            }
-
-            // have to adjust for offsets when the window-manager has a toolbar that consumes space and prevents overlap.
-            int offsetY = allLooks.getOffsetY();
-
-            for (int index = 0; index < allLooks.size(); index++) {
-                final LookAndFeel look = allLooks.get(index);
-                // the popups are ALL the same size!
-                // popups at TOP grow down, popups at BOTTOM grow up
-                int changedY;
-
-                if (growDown) {
-                    changedY = look.anchorY + (look.popupIndex * (NotifyCanvas.HEIGHT + SPACER) + offsetY);
-                }
-                else {
-                    changedY = look.anchorY - (look.popupIndex * (NotifyCanvas.HEIGHT + SPACER) + offsetY);
-                }
-
-                // now animate that popup to its new location
-                look.tween = animation.to(look, NotifyAccessor.Y_POS, accessor, MOVE_DURATION)
-                                      .target((float) changedY)
-                                      .ease(TweenEquations.Linear)
-                                      .addCallback(new TweenCallback() {
-                                          @Override
-                                          public
-                                          void onEvent(final int type, final BaseTween source) {
-                                              if (type == Events.COMPLETE) {
-                                                  // make sure to remove the tween once it's done, otherwise .kill can do weird things.
-                                                  look.tween = null;
-                                              }
-                                          }
-                                      })
-                                      .start();
+                notifyCanvas.setLocation(notifyCanvas.x, y)
             }
         }
 
-        return popupsAreEmpty;
-    }
+    val x: Int
+        get() = if (isDesktopNotification) {
+            parent.x
+        } else {
+            notifyCanvas.x
+        }
 
-    private static
-    boolean growDown(final LookAndFeel look) {
-        switch (look.position) {
-            case TOP_LEFT:
-            case TOP_RIGHT:
-            case CENTER: // center grows down
-                return true;
-            default:
-                return false;
+    fun setLocation(x: Int, y: Int) {
+        if (isDesktopNotification) {
+            parent.setLocation(x, y)
+        } else {
+            notifyCanvas.setLocation(x, y)
         }
     }
 
-    void setProgress(final int progress) {
-        notifyCanvas.setProgress(progress);
-    }
-
-    int getProgress() {
-        return notifyCanvas.getProgress();
-    }
+    var progress: Int
+        get() = notifyCanvas.progress
+        set(progress) {
+            notifyCanvas.progress = progress
+        }
 
     /**
      * we have to remove the active renderer BEFORE we set the visibility status.
      */
-    void updatePositionsPre(final boolean visible) {
+    fun updatePositionsPre(visible: Boolean) {
         if (!visible) {
-            boolean popupsAreEmpty = LookAndFeel.removePopupFromMap(this);
-            SwingActiveRender.removeActiveRender(notifyCanvas);
-
+            val popupsAreEmpty = removePopupFromMap(this)
+            SwingActiveRender.removeActiveRender(notifyCanvas)
             if (popupsAreEmpty) {
                 // if there's nothing left, stop the timer.
-                SwingActiveRender.removeActiveRenderFrameStart(frameStartHandler);
+                SwingActiveRender.removeActiveRenderFrameStart(frameStartHandler)
             }
         }
     }
@@ -514,17 +401,16 @@ class LookAndFeel {
     /**
      * when using active rendering, we have to add it AFTER we have set the visibility status
      */
-    void updatePositionsPost(final boolean visible) {
+    fun updatePositionsPost(visible: Boolean) {
         if (visible) {
-            SwingActiveRender.addActiveRender(notifyCanvas);
+            SwingActiveRender.addActiveRender(notifyCanvas)
 
             // start if we have previously stopped the timer
             if (!SwingActiveRender.containsActiveRenderFrameStart(frameStartHandler)) {
-                LookAndFeel.animation.resetUpdateTime();
-                SwingActiveRender.addActiveRenderFrameStart(frameStartHandler);
+                animation.resetUpdateTime()
+                SwingActiveRender.addActiveRenderFrameStart(frameStartHandler)
             }
-
-            LookAndFeel.addPopupToMap(this);
+            addPopupToMap(this)
         }
     }
 }

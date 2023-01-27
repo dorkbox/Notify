@@ -13,68 +13,56 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package dorkbox.notify;
+package dorkbox.notify
 
-import java.awt.GraphicsConfiguration;
-import java.awt.Insets;
-import java.awt.Point;
-import java.awt.Toolkit;
-import java.util.ArrayList;
-import java.util.Iterator;
-
-import dorkbox.util.ScreenUtil;
+import dorkbox.util.ScreenUtil
+import java.awt.Point
+import java.awt.Toolkit
 
 /**
  * Contains a list of notification popups + the Y offset (if any)
  */
-class PopupList {
-    private int offsetY = 0;
-    private ArrayList<LookAndFeel> popups = new ArrayList<LookAndFeel>(4);
+internal class PopupList {
+    var offsetY = 0
+        private set
+
+    private val popups = ArrayList<LookAndFeel>(4)
 
     /**
      * have to adjust for offsets when the window-manager has a toolbar that consumes space and prevents overlap.
      *
      * this is only done on the 2nd popup is added to the list
      */
-    void calculateOffset(final boolean showFromTop, final int anchorX, final int anchorY) {
+    fun calculateOffset(showFromTop: Boolean, anchorX: Int, anchorY: Int) {
         if (offsetY == 0) {
-            Point point = new Point(anchorX, anchorY);
-            GraphicsConfiguration gc = ScreenUtil.getMonitorAtLocation(point)
-                                                 .getDefaultConfiguration();
-
-            Insets screenInsets = Toolkit.getDefaultToolkit()
-                                         .getScreenInsets(gc);
-
+            val point = Point(anchorX, anchorY)
+            val gc = ScreenUtil.getMonitorAtLocation(point).defaultConfiguration
+            val screenInsets = Toolkit.getDefaultToolkit().getScreenInsets(gc)
             if (showFromTop) {
                 if (screenInsets.top > 0) {
-                    offsetY = screenInsets.top - LookAndFeel.MARGIN;
+                    offsetY = screenInsets.top - LookAndFeel.MARGIN
                 }
             } else {
                 if (screenInsets.bottom > 0) {
-                    offsetY = screenInsets.bottom + LookAndFeel.MARGIN;
+                    offsetY = screenInsets.bottom + LookAndFeel.MARGIN
                 }
             }
         }
     }
 
-    int getOffsetY() {
-        return offsetY;
+    fun size(): Int {
+        return popups.size
     }
 
-
-    int size() {
-        return popups.size();
+    fun add(lookAndFeel: LookAndFeel) {
+        popups.add(lookAndFeel)
     }
 
-    void add(final LookAndFeel lookAndFeel) {
-        popups.add(lookAndFeel);
+    operator fun iterator(): MutableIterator<LookAndFeel> {
+        return popups.iterator()
     }
 
-    Iterator<LookAndFeel> iterator() {
-        return popups.iterator();
-    }
-
-    LookAndFeel get(final int index) {
-        return popups.get(index);
+    operator fun get(index: Int): LookAndFeel {
+        return popups[index]
     }
 }

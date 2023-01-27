@@ -13,9 +13,8 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
-package dorkbox.notify;
+package dorkbox.notify
 
-public
 interface ActionHandler<T> {
-    void handle(T value);
+    fun handle(value: T)
 }
