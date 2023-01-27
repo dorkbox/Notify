@@ -32,7 +32,6 @@ import dorkbox.tweenEngine.TweenCallback;
 import dorkbox.tweenEngine.TweenEngine;
 import dorkbox.tweenEngine.TweenEquations;
 import dorkbox.util.ScreenUtil;
-import org.jetbrains.annotations.NotNull;
 
 @SuppressWarnings({"FieldCanBeLocal"})
 class LookAndFeel {
@@ -156,10 +155,10 @@ class LookAndFeel {
         anchorX = getAnchorX(position, bounds, isDesktopNotification);
         anchorY = getAnchorY(position, bounds, isDesktopNotification);
 
-        boolean showFromTop = isShowFromTop(this);
+        boolean growDown = growDown(this);
 
         if (tween != null) {
-            tween.cancel(); // cancel does it's thing on the next tick of animation cycle
+            tween.cancel(); // cancel does its thing on the next tick of animation cycle
             tween = null;
         }
 
@@ -173,7 +172,7 @@ class LookAndFeel {
 
                 PopupList looks = popups.get(id);
                 if (looks != null) {
-                    if (showFromTop) {
+                    if (growDown) {
                         changedY = anchorY + (popupIndex * (NotifyCanvas.HEIGHT + SPACER));
                     }
                     else {
@@ -367,15 +366,15 @@ class LookAndFeel {
             if (index == 0) {
                 targetY = anchorY;
             } else {
-                boolean showFromTop = isShowFromTop(sourceLook);
+                boolean growDown = growDown(sourceLook);
 
                 if (sourceLook.isDesktopNotification && index == 1) {
                     // have to adjust for offsets when the window-manager has a toolbar that consumes space and prevents overlap.
                     // this is only done when the 2nd popup is added to the list
-                    looks.calculateOffset(showFromTop, anchorX, anchorY);
+                    looks.calculateOffset(growDown, anchorX, anchorY);
                 }
 
-                if (showFromTop) {
+                if (growDown) {
                     targetY = anchorY + (index * (NotifyCanvas.HEIGHT + SPACER)) + looks.getOffsetY();
                 }
                 else {
@@ -398,8 +397,8 @@ class LookAndFeel {
                                  if (type == Events.COMPLETE) {
                                      sourceLook.notify.close();
                                  }
-                             }
-                        })
+                              }
+                         })
                          .start();
             }
         }
@@ -408,7 +407,7 @@ class LookAndFeel {
     // only called on the swing app or SwingActiveRender thread
     private static
     boolean removePopupFromMap(final LookAndFeel sourceLook) {
-        boolean showFromTop = isShowFromTop(sourceLook);
+        boolean growDown = growDown(sourceLook);
         boolean popupsAreEmpty;
 
         synchronized (popups) {
@@ -421,7 +420,7 @@ class LookAndFeel {
                 final LookAndFeel look = iterator.next();
 
                 if (look.tween != null) {
-                    look.tween.cancel(); // cancel does it's thing on the next tick of animation cycle
+                    look.tween.cancel(); // cancel does its thing on the next tick of animation cycle
                     look.tween = null;
                 }
 
@@ -449,7 +448,7 @@ class LookAndFeel {
                 // popups at TOP grow down, popups at BOTTOM grow up
                 int changedY;
 
-                if (showFromTop) {
+                if (growDown) {
                     changedY = look.anchorY + (look.popupIndex * (NotifyCanvas.HEIGHT + SPACER) + offsetY);
                 }
                 else {
@@ -478,7 +477,7 @@ class LookAndFeel {
     }
 
     private static
-    boolean isShowFromTop(final LookAndFeel look) {
+    boolean growDown(final LookAndFeel look) {
         switch (look.position) {
             case TOP_LEFT:
             case TOP_RIGHT:

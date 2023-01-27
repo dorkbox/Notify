@@ -123,6 +123,7 @@ class NotifyCanvas extends Canvas {
         Graphics2D g2 = (Graphics2D) g.create();
         try {
             if (showCloseButton) {
+                // manually draw the close button
                 Graphics2D g3 = (Graphics2D) g.create();
 
                 g3.setColor(theme.panel_BG);
@@ -142,6 +143,7 @@ class NotifyCanvas extends Canvas {
                 g3.drawLine(X_2, Y_1, X_1, Y_2);
             }
 
+            // draw the progress bar along the bottom
             g2.setColor(theme.progress_FG);
             g2.fillRect(0, PROGRESS_HEIGHT, progress, 2);
         } finally {
