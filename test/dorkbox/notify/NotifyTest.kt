@@ -51,8 +51,8 @@ object NotifyTest {
 //        bottomRightInFrame(3, frame)
 //        topLeftInFrame(3, frame)
 
-        react()
-//        topRightMonitor(3)
+//        react()
+        topRightMonitor(2)
 //        bottomLeftScaled(3, frame, image)
 //        bottomLeftStacking(3, frame, image)
     }
@@ -70,7 +70,7 @@ object NotifyTest {
                     .shake(4300, 10)
 //                    .hideCloseButton() // if the hideButton is visible, then it's possible to change things when clicked
                     .onClickAction {
-                        notify.text = "HOWDY"
+                        text = "HOWDY"
                         System.err.println("Notification clicked on!")
                     }
             notify.show()
@@ -81,7 +81,7 @@ object NotifyTest {
             }
     }
 
-    fun topRightMonitor(count: Int) {
+    private fun topRightMonitor(count: Int) {
         var notify: Notify
 
         for (i in 0 until count) {
@@ -89,17 +89,17 @@ object NotifyTest {
                     .title("Notify title $i")
                     .text("This is a notification " + i + " popup message This is a notification popup message This is a " +
                             "notification popup message")
-                    .hideAfter(13000)
+                    .hideAfter(130000)
                     .position(Position.TOP_RIGHT)
                     // .setScreen(0)
-                .theme(Theme.defaultDark)
+                    .theme(Theme.defaultDark)
                     // .shake(1300, 4)
-                    .shake(4300, 10)
-                    .hideCloseButton()
+//                    .shake(4300, 10)
+//                    .hideCloseButton()
                     .onClickAction { System.err.println("Notification $i clicked on!") }
             notify.show()
             try {
-                Thread.sleep(3000)
+                Thread.sleep(2000)
             } catch (e: InterruptedException) {
                 e.printStackTrace()
             }

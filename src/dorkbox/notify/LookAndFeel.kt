@@ -16,43 +16,31 @@
 package dorkbox.notify
 
 import dorkbox.notify.LAFUtil.RANDOM
-import dorkbox.notify.LAFUtil.SPACER
 import dorkbox.notify.LAFUtil.accessor
 import dorkbox.notify.LAFUtil.addPopupToMap
 import dorkbox.notify.LAFUtil.animation
 import dorkbox.notify.LAFUtil.frameStartHandler
-import dorkbox.notify.LAFUtil.getAnchorX
-import dorkbox.notify.LAFUtil.getAnchorY
-import dorkbox.notify.LAFUtil.growDown
 import dorkbox.notify.LAFUtil.mouseListener
-import dorkbox.notify.LAFUtil.popups
 import dorkbox.notify.LAFUtil.removePopupFromMap
-import dorkbox.notify.LAFUtil.windowListener
 import dorkbox.swingActiveRender.SwingActiveRender
 import dorkbox.tweenEngine.Tween
 import dorkbox.tweenEngine.TweenEquations
-import dorkbox.util.ScreenUtil
-import java.awt.Point
 import java.awt.Rectangle
 import java.awt.Window
 
-internal class LookAndFeel(
-    private val parent: Window,
-    private val notifyCanvas: NotifyCanvas,
-    val notification: Notify,
-    parentBounds: Rectangle,
-    val isDesktopNotification: Boolean
-) {
-    @Volatile
-    var anchorX: Int
+internal abstract class LookAndFeel(private val parent: Window, val notifyCanvas: NotifyCanvas, val notification: Notify) {
 
     @Volatile
-    var anchorY: Int
+    var anchorX = 0
+
+    @Volatile
+    var anchorY = 0
+
     val hideAfterDurationInSeconds: Float
     val position: Position
 
     // this is used in combination with position, so that we can track which screen and what position a popup is in
-    var idAndPosition: String
+    var idAndPosition = ""
     var popupIndex = 0
 
     @Volatile
@@ -61,64 +49,19 @@ internal class LookAndFeel(
     @Volatile
     var hideTween: Tween<*>? = null
 
+    abstract val isDesktop: Boolean
+
 
     init {
-        if (isDesktopNotification) {
-            parent.addWindowListener(windowListener)
-        }
-
         notifyCanvas.addMouseListener(mouseListener)
         hideAfterDurationInSeconds = notification.hideAfterDurationInMillis / 1000.0f
         position = notification.position
-
-        idAndPosition = if (isDesktopNotification) {
-            val point = Point(parentBounds.getX().toInt(), parentBounds.getY().toInt())
-            ScreenUtil.getMonitorNumberAtLocation(point).toString() + ":" + position
-        } else {
-            parent.name + ":" + position
-        }
-
-        anchorX = getAnchorX(position, parentBounds, isDesktopNotification)
-        anchorY = getAnchorY(position, parentBounds, isDesktopNotification)
     }
 
     // only called from an application
-    fun reLayout(bounds: Rectangle) {
-        // when the parent window moves, we stop all animation and snap the popup into place. This simplifies logic greatly
-        anchorX = getAnchorX(position, bounds, isDesktopNotification)
-        anchorY = getAnchorY(position, bounds, isDesktopNotification)
+    open fun reLayout(bounds: Rectangle) {}
 
-        val growDown = growDown(this)
-
-        if (tween != null) {
-            tween!!.cancel() // cancel does its thing on the next tick of animation cycle
-            tween = null
-        }
-
-
-        var changedY: Int
-        if (popupIndex == 0) {
-            changedY = anchorY
-        } else {
-            synchronized(popups) {
-                val id = idAndPosition
-                val looks = popups[id]
-                changedY = if (looks != null) {
-                    if (growDown) {
-                        anchorY + popupIndex * (NotifyCanvas.HEIGHT + SPACER)
-                    } else {
-                        anchorY - popupIndex * (NotifyCanvas.HEIGHT + SPACER)
-                    }
-                } else {
-                    anchorY
-                }
-            }
-        }
-
-        setLocation(anchorX, changedY)
-    }
-
-    fun close() {
+    open fun close() {
         if (hideTween != null) {
             hideTween!!.cancel()
             hideTween = null
@@ -129,13 +72,9 @@ internal class LookAndFeel(
             tween = null
         }
 
-        if (isDesktopNotification) {
-            parent.removeWindowListener(windowListener)
-        }
-
         parent.removeMouseListener(mouseListener)
         updatePositionsPre(false)
-        updatePositionsPost(false)
+        updatePositionsPost(false, isDesktop)
     }
 
     fun shake(durationInMillis: Int, amplitude: Int) {
@@ -170,34 +109,12 @@ internal class LookAndFeel(
             .start()
     }
 
-    var y: Int
-        get() = if (isDesktopNotification) {
-            parent.y
-        } else {
-            notifyCanvas.y
-        }
-        set(y) {
-            if (isDesktopNotification) {
-                parent.setLocation(parent.x, y)
-            } else {
-                notifyCanvas.setLocation(notifyCanvas.x, y)
-            }
-        }
+    abstract var y: Int
 
-    val x: Int
-        get() = if (isDesktopNotification) {
-            parent.x
-        } else {
-            notifyCanvas.x
-        }
+    abstract val x: Int
 
-    fun setLocation(x: Int, y: Int) {
-        if (isDesktopNotification) {
-            parent.setLocation(x, y)
-        } else {
-            notifyCanvas.setLocation(x, y)
-        }
-    }
+    abstract fun setLocation(x: Int, y: Int)
+
 
     var progress: Int
         get() = notifyCanvas.progress
@@ -210,6 +127,7 @@ internal class LookAndFeel(
      */
     fun updatePositionsPre(visible: Boolean) {
         if (!visible) {
+            println("remove post")
             val popupsAreEmpty = removePopupFromMap(this)
             SwingActiveRender.removeActiveRender(notifyCanvas)
             if (popupsAreEmpty) {
@@ -222,8 +140,9 @@ internal class LookAndFeel(
     /**
      * when using active rendering, we have to add it AFTER we have set the visibility status
      */
-    fun updatePositionsPost(visible: Boolean) {
+    fun updatePositionsPost(visible: Boolean, isDesktop: Boolean) {
         if (visible) {
+            println("add post")
             SwingActiveRender.addActiveRender(notifyCanvas)
 
             // start if we have previously stopped the timer
@@ -231,7 +150,8 @@ internal class LookAndFeel(
                 animation.resetUpdateTime()
                 SwingActiveRender.addActiveRenderFrameStart(frameStartHandler)
             }
-            addPopupToMap(this)
+
+            addPopupToMap(this, isDesktop)
         }
     }
 }

@@ -16,9 +16,9 @@
 package dorkbox.notify
 
 import dorkbox.swingActiveRender.ActionHandlerLong
-import dorkbox.tweenEngine.TweenCallback.Events.COMPLETE
 import dorkbox.tweenEngine.TweenEngine.Companion.create
 import dorkbox.tweenEngine.TweenEquations
+import dorkbox.tweenEngine.TweenEvents
 import dorkbox.util.ScreenUtil
 import java.awt.GraphicsEnvironment
 import java.awt.MouseInfo
@@ -27,7 +27,7 @@ import java.awt.event.MouseAdapter
 import java.util.*
 
 internal object LAFUtil{
-    val popups: MutableMap<String, PopupList> = HashMap()
+    val popups = mutableMapOf<String, PopupList>()
 
     // access is only from a single thread ever, so unsafe is preferred.
     val animation = create().unsafe().build()
@@ -40,7 +40,7 @@ internal object LAFUtil{
     const val SPACER = 10
     const val MARGIN = 20
 
-    val windowListener: java.awt.event.WindowAdapter = WindowAdapter()
+    val windowCloseListener: java.awt.event.WindowAdapter = WindowCloseAdapter()
     val mouseListener: MouseAdapter = ClickAdapter()
     val RANDOM = Random()
 
@@ -69,43 +69,8 @@ internal object LAFUtil{
         return device.defaultConfiguration.bounds
     }
 
-    fun getAnchorX(position: Position, bounds: Rectangle, isDesktop: Boolean): Int {
-        // we use the screen that the mouse is currently on.
-        val startX = if (isDesktop) {
-            bounds.getX().toInt()
-        } else {
-            0
-        }
-
-        val screenWidth = bounds.getWidth().toInt()
-        return when (position) {
-            Position.TOP_LEFT, Position.BOTTOM_LEFT -> MARGIN + startX
-            Position.CENTER -> startX + screenWidth / 2 - NotifyCanvas.WIDTH / 2 - MARGIN / 2
-            Position.TOP_RIGHT, Position.BOTTOM_RIGHT -> startX + screenWidth - NotifyCanvas.WIDTH - MARGIN
-        }
-    }
-
-    fun getAnchorY(position: Position, bounds: Rectangle, isDesktop: Boolean): Int {
-        val startY = if (isDesktop) {
-            bounds.getY().toInt()
-        } else {
-            0
-        }
-
-        val screenHeight = bounds.getHeight().toInt()
-        return when (position) {
-            Position.TOP_LEFT, Position.TOP_RIGHT -> startY + MARGIN
-            Position.CENTER -> startY + screenHeight / 2 - NotifyCanvas.HEIGHT / 2 - MARGIN / 2 - SPACER
-            Position.BOTTOM_LEFT, Position.BOTTOM_RIGHT -> if (isDesktop) {
-                startY + screenHeight - NotifyCanvas.HEIGHT - MARGIN
-            } else {
-                         screenHeight - NotifyCanvas.HEIGHT - MARGIN - SPACER * 2
-            }
-        }
-    }
-
     // only called on the swing EDT thread
-    fun addPopupToMap(sourceLook: LookAndFeel) {
+    fun addPopupToMap(sourceLook: LookAndFeel, isDesktop: Boolean) {
         synchronized(popups) {
             val id = sourceLook.idAndPosition
             var looks = popups[id]
@@ -126,7 +91,7 @@ internal object LAFUtil{
                 anchorY
             } else {
                 val growDown = growDown(sourceLook)
-                if (sourceLook.isDesktopNotification && index == 1) {
+                if (isDesktop && index == 1) {
                     // have to adjust for offsets when the window-manager has a toolbar that consumes space and prevents overlap.
                     // this is only done when the 2nd popup is added to the list
                     looks.calculateOffset(growDown, anchorX, anchorY)
@@ -141,13 +106,16 @@ internal object LAFUtil{
             looks.add(sourceLook)
             sourceLook.setLocation(anchorX, targetY)
 
-            if (sourceLook.hideAfterDurationInSeconds > 0 && sourceLook.hideTween == null) {
+            if (index == 0 && sourceLook.hideAfterDurationInSeconds > 0 && sourceLook.hideTween == null) {
+                println("start timeline")
                 // begin a timeline to get rid of the popup (default is 5 seconds)
-                animation.to(sourceLook, NotifyAccessor.PROGRESS, accessor, sourceLook.hideAfterDurationInSeconds)
+                val x = animation.to(sourceLook, NotifyAccessor.PROGRESS, accessor, sourceLook.hideAfterDurationInSeconds)
                     .target(NotifyCanvas.WIDTH.toFloat())
                     .ease(TweenEquations.Linear)
-                    .addCallback(COMPLETE) { sourceLook.notification.onClose() }
+                    .addCallback(TweenEvents.COMPLETE) { sourceLook.notification.onClose() }
                     .start()
+
+                println("started $x")
             }
         }
     }
@@ -158,6 +126,7 @@ internal object LAFUtil{
         var popupsAreEmpty: Boolean
 
         synchronized(popups) {
+            println("remove")
             popupsAreEmpty = popups.isEmpty()
             val allLooks = popups[sourceLook.idAndPosition]
 
@@ -203,7 +172,7 @@ internal object LAFUtil{
                     .to(look, NotifyAccessor.Y_POS, accessor, MOVE_DURATION)
                     .target(changedY.toFloat())
                     .ease(TweenEquations.Linear)
-                    .addCallback(COMPLETE) {
+                    .addCallback(TweenEvents.COMPLETE) {
                         // make sure to remove the tween once it's done, otherwise .kill can do weird things.
                         look.tween = null
                     }

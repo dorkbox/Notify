@@ -152,18 +152,32 @@ class Notify private constructor() {
     }
 
     @Volatile
+    private var notifyCanvas: NotifyCanvas? = null
+    @Volatile
     internal  var notifyPopup: NotifyType? = null
     @Volatile
     internal var notifyLook: LookAndFeel? = null
 
     @Volatile
     var title = "Notification"
+        set(value) {
+            field = value
+            notifyCanvas?.refresh()
+        }
 
     @Volatile
     var text = "Lorem ipsum"
+        set(value) {
+            field = value
+            notifyCanvas?.refresh()
+        }
 
     @Volatile
     var theme = Theme.defaultLight
+        set(value) {
+            field = value
+            notifyCanvas?.refresh()
+        }
 
     @Volatile
     var position = Position.BOTTOM_RIGHT
@@ -176,12 +190,20 @@ class Notify private constructor() {
      */
     @Volatile
     var hideCloseButton = false
+        set(value) {
+            field = value
+            notifyCanvas?.refresh()
+        }
 
     @Volatile
     var screen = Short.MIN_VALUE.toInt()
 
     @Volatile
     var image: ImageIcon? = null
+        set(value) {
+            field = value
+            notifyCanvas?.refresh()
+        }
 
     /**
      * Called when the notification is closed, either via close button or via close()
@@ -194,9 +216,6 @@ class Notify private constructor() {
      */
     @Volatile
     var onClickAction: Notify.()->Unit = {}
-
-    @Volatile
-    var name = DIALOG_ERROR
 
     @Volatile
     var shakeDurationInMillis = 0
@@ -293,6 +312,7 @@ class Notify private constructor() {
      */
     fun theme(theme: Theme): Notify {
         this.theme = theme
+        notifyCanvas?.refresh()
         return this
     }
 
@@ -301,6 +321,7 @@ class Notify private constructor() {
      */
     fun hideCloseButton(): Notify {
         hideCloseButton = true
+        notifyCanvas?.refresh()
         return this
     }
 
@@ -308,7 +329,7 @@ class Notify private constructor() {
      * Shows the notification with the built-in 'warning' image.
      */
     fun showWarning() {
-        name = DIALOG_WARNING
+        title = DIALOG_WARNING
         image = getImage(DIALOG_WARNING)
         show()
     }
@@ -317,7 +338,7 @@ class Notify private constructor() {
      * Shows the notification with the built-in 'information' image.
      */
     fun showInformation() {
-        name = DIALOG_INFORMATION
+        title = "Information"
         image = getImage(DIALOG_INFORMATION)
         show()
     }
@@ -326,7 +347,7 @@ class Notify private constructor() {
      * Shows the notification with the built-in 'error' image.
      */
     fun showError() {
-        name = DIALOG_ERROR
+        title = "Error"
         image = getImage(DIALOG_ERROR)
         show()
     }
@@ -335,7 +356,7 @@ class Notify private constructor() {
      * Shows the notification with the built-in 'confirm' image.
      */
     fun showConfirm() {
-        name = DIALOG_CONFIRM
+        title = "Confirm"
         image = getImage(DIALOG_CONFIRM)
         show()
     }
@@ -349,6 +370,10 @@ class Notify private constructor() {
 
         // must be done in the swing EDT
         SwingUtil.invokeAndWaitQuietly {
+            if (notify.notifyCanvas != null) {
+                return@invokeAndWaitQuietly
+            }
+
             val window = notify.attachedFrame
             val shakeDuration = notify.shakeDurationInMillis
             val shakeAmp = notify.shakeAmplitude
@@ -360,10 +385,10 @@ class Notify private constructor() {
 
             if (window == null) {
                 notifyPopup = AsDesktop(notify, notifyCanvas)
-                look = LookAndFeel(notifyPopup, notifyCanvas, notify, LAFUtil.getGraphics(notify.screen), true)
+                look = AsDesktopLAF(notify, notifyCanvas, notifyPopup, LAFUtil.getGraphics(notify.screen))
             } else {
                 notifyPopup = AsApplication(notify, notifyCanvas)
-                look = LookAndFeel(window, notifyCanvas, notify, window.bounds, false)
+                look = AsApplicationLAF(notify, notifyCanvas, window, window.bounds)
             }
 
             notifyPopup.setVisible(true, look)
@@ -372,6 +397,7 @@ class Notify private constructor() {
                 look.shake(shakeDuration, shakeAmp)
             }
 
+            notify.notifyCanvas = notifyCanvas
             notify.notifyPopup = notifyPopup
             notify.notifyLook = look
         }
@@ -431,12 +457,20 @@ class Notify private constructor() {
     // called when this notification is closed. called in the swing EDT!
     internal fun onClose() {
         this.notifyPopup!!.close()
+        this.notifyLook!!.close()
+
         this.onCloseAction.invoke(this)
+
         notifyPopup = null
         notifyLook = null
+        notifyCanvas = null
     }
 
     internal fun onClickAction() {
         this.onClickAction.invoke(this)
+    }
+
+    internal fun doLayoutForApp() {
+        notifyLook?.reLayout(attachedFrame!!.bounds)
     }
 }

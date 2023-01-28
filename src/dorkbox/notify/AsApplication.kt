@@ -30,8 +30,6 @@ internal class AsApplication internal constructor(
         private const val glassPanePrefix = "dorkbox.notify"
     }
 
-    private val window = notification.attachedFrame!!
-
     private val parentListener: ComponentListener
     private val windowStateListener: WindowStateListener
     private var glassPane: JPanel
@@ -41,13 +39,13 @@ internal class AsApplication internal constructor(
         // this makes sure that our notify canvas stay anchored to the parent window (if it's hidden/shown/moved/etc)
         parentListener = object : ComponentListener {
             override fun componentShown(e: ComponentEvent) {
-                notification.notifyLook?.reLayout(window.bounds)
+                notification.doLayoutForApp()
             }
 
             override fun componentHidden(e: ComponentEvent) {}
 
             override fun componentResized(e: ComponentEvent) {
-                notification.notifyLook?.reLayout(window.bounds)
+                notification.doLayoutForApp()
             }
 
             override fun componentMoved(e: ComponentEvent) {}
@@ -56,10 +54,12 @@ internal class AsApplication internal constructor(
         windowStateListener = WindowStateListener { e ->
             val state = e.newState
             if (state and Frame.ICONIFIED == 0) {
-                notification.notifyLook?.reLayout(window.bounds)
+                notification.doLayoutForApp()
             }
         }
 
+
+        val window = notification.attachedFrame!!
         window.addWindowStateListener(windowStateListener)
         window.addComponentListener(parentListener)
 
@@ -88,14 +88,22 @@ internal class AsApplication internal constructor(
     }
 
     override fun setVisible(visible: Boolean, look: LookAndFeel) {
+        // was it already visible?
+        if (visible == glassPane.isVisible) {
+            // prevent "double setting" visible state
+            return
+        }
+
         // this is because the order of operations are different based upon visibility.
         look.updatePositionsPre(visible)
-        look.updatePositionsPost(visible)
+        look.updatePositionsPost(visible, false)
     }
 
     // called on the Swing EDT.
     override fun close() {
         glassPane.remove(notifyCanvas)
+
+        val window = notification.attachedFrame!!
         window.removeWindowStateListener(windowStateListener)
         window.removeComponentListener(parentListener)
 

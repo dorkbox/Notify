@@ -51,7 +51,8 @@ internal class AsDesktop internal constructor(val notification: Notify, notifyCa
         super.setVisible(visible)
 
         // this is because the order of operations are different based upon visibility.
-        look.updatePositionsPost(visible)
+        look.updatePositionsPost(visible, true)
+
         if (visible) {
             toFront()
         }

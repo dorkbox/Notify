@@ -18,7 +18,7 @@ package dorkbox.notify
 import java.awt.event.WindowAdapter
 import java.awt.event.WindowEvent
 
-internal class WindowAdapter : WindowAdapter() {
+internal class WindowCloseAdapter : WindowAdapter() {
     override fun windowClosing(e: WindowEvent) {
         if (e.newState != WindowEvent.WINDOW_CLOSED) {
             val source = e.source as AsDesktop

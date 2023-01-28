@@ -48,8 +48,11 @@ internal class NotifyCanvas(
         isFocusable = false
         background = theme.panel_BG
 
-
         // now we setup the rendering of the image
+        cachedImage = renderBackgroundInfo(notification.title, notification.text, theme, imageIcon)
+    }
+
+    fun refresh() {
         cachedImage = renderBackgroundInfo(notification.title, notification.text, theme, imageIcon)
     }
 
@@ -111,6 +114,13 @@ internal class NotifyCanvas(
             // draw the progress bar along the bottom
             g2.color = theme.progress_FG
             g2.fillRect(0, PROGRESS_HEIGHT, progress, 2)
+//            if (notification.title == "Notify title 0") {
+//                println("asd")
+//                Toolkit.getDefaultToolkit().sync()
+//            }
+
+        } catch (e: Exception) {
+            e.printStackTrace()
         } finally {
             g2.dispose()
         }
@@ -148,7 +158,7 @@ internal class NotifyCanvas(
         const val WIDTH = 300
         const val HEIGHT = 87
         private const val PROGRESS_HEIGHT = HEIGHT - 2
-        private fun renderBackgroundInfo(title: String, notificationText: String, theme: Theme, imageIcon: ImageIcon?): BufferedImage {
+        private fun renderBackgroundInfo(title: String, textBody: String, theme: Theme, imageIcon: ImageIcon?): BufferedImage {
 
             val image = BufferedImage(WIDTH, HEIGHT, BufferedImage.TYPE_INT_ARGB)
             val g2 = image.createGraphics()
@@ -185,17 +195,17 @@ internal class NotifyCanvas(
                 }
 
                 // Draw the main text
-                var length = notificationText.length
+                var length = textBody.length
                 val text = StringBuilder(length)
 
                 // are we "html" already? just check for the starting tag and strip off END html tag
-                if (length >= 13 && notificationText.regionMatches(length - 7, "</html>", 0, 7, ignoreCase = true)) {
-                    text.append(notificationText)
+                if (length >= 13 && textBody.regionMatches(length - 7, "</html>", 0, 7, ignoreCase = true)) {
+                    text.append(textBody)
                     text.delete(text.length - 7, text.length)
                     length -= 7
                 } else {
                     text.append("<html>")
-                    text.append(notificationText)
+                    text.append(textBody)
                 }
 
                 // make sure the text is the correct length
@@ -218,6 +228,7 @@ internal class NotifyCanvas(
             } finally {
                 g2.dispose()
             }
+
             return image
         }
     }

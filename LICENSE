@@ -6,6 +6,14 @@
    Linux, MacOS, or Windows (notification/growl/toast/) popups for the desktop for Java 8+
 
    Extra license information
+     - Kotlin - 
+       [The Apache Software License, Version 2.0]
+       https://github.com/JetBrains/kotlin
+       Copyright 2020
+         JetBrains s.r.o. and Kotlin Programming Language contributors
+       Kotlin Compiler, Test Data+Libraries, and Tools repository contain third-party code, to which different licenses may apply
+       See: https://github.com/JetBrains/kotlin/blob/master/license/README.md
+
      - TweenEngine - 
        [The Apache Software License, Version 2.0]
        https://git.dorkbox.com/dorkbox/TweenEngine
@@ -15,14 +23,8 @@
        High performance and lightweight Animation/Tween framework for Java 8+
 
        Extra license information
-         - Robert Penner's Easing Functions - 
-           [BSD 3-Clause License]
-           http://robertpenner.com/easing
-           Copyright 2001
-             Robert Penner
-
          - Easing Functions - 
-           [BSD 3-Clause License]
+           [Public Domain, per Creative Commons CC0]
            https://github.com/Michaelangel007/easing/blob/master/js/core/easing.js
            Copyright 2017
              Michael Pohoreski
@@ -665,10 +667,3 @@
        https://git.dorkbox.com/dorkbox/PropertyLoader
        Copyright 2023
          Dorkbox LLC
-
-
- - Dorkbox TweenEngine - 
-   [The Apache Software License, Version 2.0]
-   https://git.dorkbox.com/dorkbox/TweenEngine
-   Copyright 2023
-     Dorkbox LLC
