@@ -37,6 +37,7 @@ internal class AsDesktopLAF(notification: Notify, notifyCanvas: NotifyCanvas, pr
         anchorY = getAnchorY(position, parentBounds)
     }
 
+    @Suppress("DuplicatedCode")
     private fun getAnchorX(position: Position, bounds: Rectangle): Int {
         // we use the screen that the mouse is currently on.
         val startX = bounds.getX().toInt()
