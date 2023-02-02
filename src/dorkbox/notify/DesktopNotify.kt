@@ -21,7 +21,6 @@ import dorkbox.tweenEngine.Tween
 import dorkbox.tweenEngine.TweenEquations
 import dorkbox.tweenEngine.TweenEvents
 import dorkbox.util.ScreenUtil
-import dorkbox.util.SwingUtil
 import java.awt.Dimension
 import java.awt.Graphics
 import java.awt.MouseInfo
@@ -142,15 +141,16 @@ internal class DesktopNotify(override val notification: Notify) : JWindow(), Not
     override fun setupHide() {
         if (hideTween == null && notification.hideAfterDurationInMillis > 0) {
             // begin a timeline to get rid of the popup (default is 5 seconds)
-            hideTween = tweenEngine.to(this, DesktopAccessor.PROGRESS, tweenAccessor, notification.hideAfterDurationInMillis / 1000.0f)
+            val tween = tweenEngine
+                .to(this, DesktopAccessor.PROGRESS, tweenAccessor, notification.hideAfterDurationInMillis / 1000.0f)
                 .value(Notify.WIDTH.toFloat())
                 .ease(TweenEquations.Linear)
                 .addCallback(TweenEvents.COMPLETE) {
-                    SwingUtil.invokeLater {
-                        notification.onClose()
-                    }
+                    notification.onClose()
                 }
-                .start()
+
+            hideTween = tween
+            tween.start()
         }
     }
 
@@ -175,7 +175,7 @@ internal class DesktopNotify(override val notification: Notify) : JWindow(), Not
     override fun doShake(count: Int, targetX: Float, targetY: Float) {
         if (shakeTween != null) {
             shakeTween!!.valueRelative(targetX, targetY)
-                .repeatAutoReverse(count, 0f)
+                        .repeatAutoReverse(count, 0f)
         } else {
             val tween = tweenEngine
                 .to(this, DesktopAccessor.X_Y_POS, tweenAccessor, 0.05f)

@@ -15,10 +15,10 @@
  */
 package dorkbox.notify
 
+import dorkbox.notify.LAFUtil.tweenEngine
 import dorkbox.tweenEngine.Tween
 import dorkbox.tweenEngine.TweenEquations
 import dorkbox.tweenEngine.TweenEvents
-import dorkbox.util.SwingUtil
 import java.awt.Canvas
 import java.awt.Dimension
 import java.awt.Graphics
@@ -148,7 +148,6 @@ internal class AppNotify(override val notification: Notify): Canvas(), NotifyTyp
             throw RuntimeException("Not able to add the notification to the window glassPane")
         }
 
-
         // now we setup the rendering of the image
         refresh()
     }
@@ -226,15 +225,16 @@ internal class AppNotify(override val notification: Notify): Canvas(), NotifyTyp
     override fun setupHide() {
         if (hideTween == null && notification.hideAfterDurationInMillis > 0) {
             // begin a timeline to get rid of the popup (default is 5 seconds)
-            hideTween = LAFUtil.tweenEngine.to(this, AppAccessor.PROGRESS, tweenAccessor, notification.hideAfterDurationInMillis / 1000.0f)
+            val tween = tweenEngine
+                .to(this, AppAccessor.PROGRESS, tweenAccessor, notification.hideAfterDurationInMillis / 1000.0f)
                 .value(Notify.WIDTH.toFloat())
                 .ease(TweenEquations.Linear)
                 .addCallback(TweenEvents.COMPLETE) {
-                    SwingUtil.invokeLater {
-                        notification.onClose()
-                    }
+                    notification.onClose()
                 }
-                .start()
+
+            hideTween = tween
+            tween.start()
         }
     }
 
@@ -242,7 +242,7 @@ internal class AppNotify(override val notification: Notify): Canvas(), NotifyTyp
         if (moveTween != null) {
             moveTween!!.value(y)
         } else {
-            val tween = LAFUtil.tweenEngine
+            val tween = tweenEngine
                 .to(this, AppAccessor.Y_POS, tweenAccessor, Notify.MOVE_DURATION)
                 .value(y)
                 .ease(TweenEquations.Linear)
@@ -261,7 +261,7 @@ internal class AppNotify(override val notification: Notify): Canvas(), NotifyTyp
             shakeTween!!.valueRelative(targetX, targetY)
                 .repeatAutoReverse(count, 0f)
         } else {
-            val tween = LAFUtil.tweenEngine
+            val tween = tweenEngine
                 .to(this, AppAccessor.X_Y_POS, tweenAccessor, 0.05f)
                 .valueRelative(targetX, targetY)
                 .repeatAutoReverse(count, 0f)
@@ -273,20 +273,17 @@ internal class AppNotify(override val notification: Notify): Canvas(), NotifyTyp
     }
 
     fun onClick(x: Int, y: Int) {
-        // this must happen in the Swing EDT. This is usually called by the active renderer
-        SwingUtil.invokeLater {
-            // Check - we were over the 'X' (and thus no notify), or was it in the general area?
+        // Check - we were over the 'X' (and thus no notify), or was it in the general area?
 
-            val isClickOnCloseButton = !notification.hideCloseButton && x >= 280 && y <= 20
+        val isClickOnCloseButton = !notification.hideCloseButton && x >= 280 && y <= 20
 
-            // reasonable position for detecting mouse over
-            if (!isClickOnCloseButton) {
-                // only call the general click handler IF we click in the general area!
-                notification.onClickAction()
-            } else {
-                // we always close the notification popup
-                notification.onClose()
-            }
+        // reasonable position for detecting mouse over
+        if (isClickOnCloseButton) {
+            // we always close the notification popup
+            notification.onClose()
+        } else {
+            // only call the general click handler IF we click in the general area!
+            notification.onClickAction()
         }
     }
 
