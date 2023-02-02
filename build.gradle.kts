@@ -26,7 +26,7 @@ gradle.startParameter.showStacktrace = ShowStacktrace.ALWAYS_FULL   // always sh
 gradle.startParameter.warningMode = WarningMode.All
 
 plugins {
-    id("com.dorkbox.GradleUtils") version "3.10"
+    id("com.dorkbox.GradleUtils") version "3.11"
     id("com.dorkbox.Licensing") version "2.20"
     id("com.dorkbox.VersionUpdate") version "2.6"
     id("com.dorkbox.GradlePublish") version "1.17"
@@ -46,6 +46,7 @@ object Extras {
     const val vendor = "Dorkbox LLC"
     const val vendorUrl = "https://dorkbox.com"
     const val url = "https://git.dorkbox.com/dorkbox/Notify"
+
     val buildDate = Instant.now().toString()
 }
 
@@ -55,17 +56,13 @@ object Extras {
 GradleUtils.load("$projectDir/../../gradle.properties", Extras)
 GradleUtils.defaults()
 GradleUtils.compileConfiguration(JavaVersion.VERSION_1_8)
+GradleUtils.jpms(JavaVersion.VERSION_1_9)
 
 licensing {
     license(License.APACHE_2) {
         author(Extras.vendor)
         url(Extras.url)
         note(Extras.description)
-    }
-
-    license("Dorkbox TweenEngine", License.APACHE_2) {
-        author(Extras.vendor)
-        url("https://git.dorkbox.com/dorkbox/TweenEngine")
     }
 }
 
@@ -104,10 +101,10 @@ tasks.jar.get().apply {
 }
 
 dependencies {
-    implementation("com.dorkbox:TweenEngine:8.3.1")
-    implementation("com.dorkbox:SwingActiveRender:1.2")
-    implementation("com.dorkbox:Utilities:1.39")
-    implementation("com.dorkbox:PropertyLoader:1.1")
+    api("com.dorkbox:TweenEngine:8.3.1")
+    api("com.dorkbox:SwingActiveRender:1.3")
+    api("com.dorkbox:Utilities:1.39")
+    api("com.dorkbox:PropertyLoader:1.1")
 }
 
 publishToSonatype {

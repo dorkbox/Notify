@@ -1,11 +1,9 @@
 module dorkbox.notify {
     exports dorkbox.notify;
 
-//    requires transitive dorkbox.updates;
-//
-//    requires static com.esotericsoftware.kryo;
-//    requires static io.netty.common;
-//    requires static io.netty.buffer;
-//
-//    requires transitive kotlin.stdlib;
+    requires transitive dorkbox.updates;
+    requires transitive dorkbox.swingActiveRender;
+    requires transitive dorkbox.tweenEngine;
+
+    requires transitive kotlin.stdlib;
 }

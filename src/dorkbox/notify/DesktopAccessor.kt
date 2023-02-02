@@ -17,15 +17,21 @@ package dorkbox.notify
 
 import dorkbox.tweenEngine.TweenAccessor
 
-internal class NotifyAccessor : TweenAccessor<LookAndFeel> {
+internal class DesktopAccessor : TweenAccessor<DesktopNotify> {
     companion object {
+        const val X_POS = 0
         const val Y_POS = 1
         const val X_Y_POS = 2
         const val PROGRESS = 3
     }
 
-    override fun getValues(target: LookAndFeel, tweenType: Int, returnValues: FloatArray): Int {
+    override fun getValues(target: DesktopNotify, tweenType: Int, returnValues: FloatArray): Int {
         when (tweenType) {
+            X_POS -> {
+                returnValues[0] = target.x.toFloat()
+                return 1
+            }
+
             Y_POS -> {
                 returnValues[0] = target.y.toFloat()
                 return 1
@@ -45,15 +51,20 @@ internal class NotifyAccessor : TweenAccessor<LookAndFeel> {
         return 1
     }
 
-    override fun setValues(target: LookAndFeel, tweenType: Int, newValues: FloatArray) {
+    override fun setValues(target: DesktopNotify, tweenType: Int, newValues: FloatArray) {
         when (tweenType) {
+            X_POS -> {
+                target.setLocationInternal(newValues[0].toInt(), target.y)
+                return
+            }
+
             Y_POS -> {
-                target.y = newValues[0].toInt()
+                target.setLocationInternal(target.x, newValues[0].toInt())
                 return
             }
 
             X_Y_POS -> {
-                target.setLocation(newValues[0].toInt(), newValues[1].toInt())
+                target.setLocationInternal(newValues[0].toInt(), newValues[1].toInt())
                 return
             }
 

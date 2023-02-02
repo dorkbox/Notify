@@ -15,36 +15,26 @@
  */
 package dorkbox.notify
 
-import dorkbox.swingActiveRender.ActionHandlerLong
+import dorkbox.swingActiveRender.SwingActiveRender
 import dorkbox.tweenEngine.TweenEngine.Companion.create
-import dorkbox.tweenEngine.TweenEquations
-import dorkbox.tweenEngine.TweenEvents
 import dorkbox.util.ScreenUtil
 import java.awt.GraphicsEnvironment
 import java.awt.MouseInfo
 import java.awt.Rectangle
-import java.awt.event.MouseAdapter
 import java.util.*
 
-internal object LAFUtil{
-    val popups = mutableMapOf<String, PopupList>()
+internal object LAFUtil {
+    private val popups = mutableMapOf<String, MutableList<NotifyType<*>>>()
 
     // access is only from a single thread ever, so unsafe is preferred.
-    val animation = create().unsafe().build()
-
-    val accessor = NotifyAccessor()
+    val tweenEngine = create().setCombinedAttributesLimit(2).build()
 
     // this is for updating the tween engine during active-rendering
-    val frameStartHandler = ActionHandlerLong { deltaInNanos -> animation.update(deltaInNanos) }
+    private val animationUpdateHandler: (Long)->Unit = { deltaInNanos ->
+        tweenEngine.update(deltaInNanos)
+    }
 
-    const val SPACER = 10
-    const val MARGIN = 20
-
-    val windowCloseListener: java.awt.event.WindowAdapter = WindowCloseAdapter()
-    val mouseListener: MouseAdapter = ClickAdapter()
     val RANDOM = Random()
-
-    private val MOVE_DURATION = Notify.MOVE_DURATION
 
     fun getGraphics(screen: Int): Rectangle {
         val device = if (screen == Short.MIN_VALUE.toInt()) {
@@ -70,120 +60,95 @@ internal object LAFUtil{
     }
 
     // only called on the swing EDT thread
-    fun addPopupToMap(sourceLook: LookAndFeel, isDesktop: Boolean) {
+    fun addPopupToMap(notify: NotifyType<*>) {
+        // start if we have previously stopped the timer
+        if (!SwingActiveRender.contains(animationUpdateHandler)) {
+            tweenEngine.resetUpdateTime()
+            SwingActiveRender.add(animationUpdateHandler)
+        }
+
         synchronized(popups) {
-            val id = sourceLook.idAndPosition
-            var looks = popups[id]
-            if (looks == null) {
-                looks = PopupList()
-                popups[id] = looks
+            val id = notify.idAndPosition
+
+            val allNotifications = popups.getOrPut(id) {
+                ArrayList<NotifyType<*>>(4)
             }
 
-            val index = looks.size()
-            sourceLook.popupIndex = index
+            notify.popupIndex = allNotifications.size
+
+//            println("Adding $index : ${notify.notification.title}")
 
             // the popups are ALL the same size!
             // popups at TOP grow down, popups at BOTTOM grow up
-            val anchorX = sourceLook.anchorX
-            val anchorY = sourceLook.anchorY
+            val anchorX = notify.anchorX
+            val anchorY = notify.anchorY
 
-            val targetY = if (index == 0) {
-                anchorY
+            val targetY = if (growDown(notify)) {
+                anchorY + notify.popupIndex * (Notify.HEIGHT + Notify.SPACER)
             } else {
-                val growDown = growDown(sourceLook)
-                if (isDesktop && index == 1) {
-                    // have to adjust for offsets when the window-manager has a toolbar that consumes space and prevents overlap.
-                    // this is only done when the 2nd popup is added to the list
-                    looks.calculateOffset(growDown, anchorX, anchorY)
-                }
-                if (growDown) {
-                    anchorY + index * (NotifyCanvas.HEIGHT + SPACER) + looks.offsetY
-                } else {
-                    anchorY - index * (NotifyCanvas.HEIGHT + SPACER) + looks.offsetY
-                }
+                anchorY - notify.popupIndex * (Notify.HEIGHT + Notify.SPACER)
             }
 
-            looks.add(sourceLook)
-            sourceLook.setLocation(anchorX, targetY)
-
-            if (index == 0 && sourceLook.hideAfterDurationInSeconds > 0 && sourceLook.hideTween == null) {
-                println("start timeline")
-                // begin a timeline to get rid of the popup (default is 5 seconds)
-                val x = animation.to(sourceLook, NotifyAccessor.PROGRESS, accessor, sourceLook.hideAfterDurationInSeconds)
-                    .target(NotifyCanvas.WIDTH.toFloat())
-                    .ease(TweenEquations.Linear)
-                    .addCallback(TweenEvents.COMPLETE) { sourceLook.notification.onClose() }
-                    .start()
-
-                println("started $x")
-            }
+            allNotifications.add(notify)
+            notify.setLocationInternal(anchorX, targetY)
+            notify.setupHide()
         }
     }
 
     // only called on the swing app or SwingActiveRender thread
-    fun removePopupFromMap(sourceLook: LookAndFeel): Boolean {
-        val growDown = growDown(sourceLook)
-        var popupsAreEmpty: Boolean
+    fun removePopupFromMap(notify: NotifyType<*>) {
+        val growDown = growDown(notify)
 
         synchronized(popups) {
-            println("remove")
-            popupsAreEmpty = popups.isEmpty()
-            val allLooks = popups[sourceLook.idAndPosition]
+            val allNotifications = popups[notify.idAndPosition]!!
 
             // there are two loops because it is necessary to cancel + remove all tweens BEFORE adding new ones.
             var adjustPopupPosition = false
-            val iterator = allLooks!!.iterator()
+            val iterator = allNotifications.iterator()
             while (iterator.hasNext()) {
-                val look = iterator.next()
-                if (look.tween != null) {
-                    look.tween!!.cancel() // cancel does its thing on the next tick of animation cycle
-                    look.tween = null
+                val next = iterator.next()
+                next.cancelMove()
+
+                if (adjustPopupPosition) {
+                    // we have to adjust all the following popups to a new location
+                    next.popupIndex--
                 }
 
-                if (look === sourceLook) {
-                    if (look.hideTween != null) {
-                        look.hideTween!!.cancel()
-                        look.hideTween = null
-                    }
+                if (next === notify) {
+                    notify.cancelHide()
+
                     adjustPopupPosition = true
                     iterator.remove()
                 }
-
-                if (adjustPopupPosition) {
-                    look.popupIndex--
-                }
             }
 
-            // have to adjust for offsets when the window-manager has a toolbar that consumes space and prevents overlap.
-            val offsetY = allLooks.offsetY
-            for (index in 0 until allLooks.size()) {
-                val look = allLooks[index]
 
+            allNotifications.forEach { notify ->
                 // the popups are ALL the same size!
                 // popups at TOP grow down, popups at BOTTOM grow up
                 val changedY = if (growDown) {
-                    look.anchorY + (look.popupIndex * (NotifyCanvas.HEIGHT + SPACER) + offsetY)
+                    notify.anchorY + notify.popupIndex * (Notify.HEIGHT + Notify.SPACER)
                 } else {
-                    look.anchorY - (look.popupIndex * (NotifyCanvas.HEIGHT + SPACER) + offsetY)
+                    notify.anchorY - notify.popupIndex * (Notify.HEIGHT + Notify.SPACER)
                 }
 
-                // now animate that popup to its new location
-                look.tween = animation
-                    .to(look, NotifyAccessor.Y_POS, accessor, MOVE_DURATION)
-                    .target(changedY.toFloat())
-                    .ease(TweenEquations.Linear)
-                    .addCallback(TweenEvents.COMPLETE) {
-                        // make sure to remove the tween once it's done, otherwise .kill can do weird things.
-                        look.tween = null
-                    }
-                    .start()
+                // now animate ALL new notification popups their new location
+                notify.setupMove(changedY.toFloat())
+            }
+
+            if (allNotifications.isEmpty()) {
+                popups.remove(notify.idAndPosition)
+            }
+
+            if (popups.isEmpty()) {
+                // if there's nothing left, stop the timer.
+                SwingActiveRender.remove(animationUpdateHandler)
             }
         }
-        return popupsAreEmpty
     }
 
-    fun growDown(look: LookAndFeel): Boolean {
-        return when (look.position) {
+    fun growDown(notify: NotifyType<*>): Boolean {
+        return when (notify.notification.position) {
             Position.TOP_LEFT, Position.TOP_RIGHT, Position.CENTER -> true
             else -> false
         }

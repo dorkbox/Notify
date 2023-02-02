@@ -18,17 +18,17 @@ package dorkbox.notify
 import java.awt.event.WindowAdapter
 import java.awt.event.WindowEvent
 
-internal class WindowCloseAdapter : WindowAdapter() {
+internal class DesktopWindowCloseAdapter : WindowAdapter() {
     override fun windowClosing(e: WindowEvent) {
         if (e.newState != WindowEvent.WINDOW_CLOSED) {
-            val source = e.source as AsDesktop
+            val source = e.source as DesktopNotify
             source.notification.close()
         }
     }
 
     override fun windowLostFocus(e: WindowEvent) {
         if (e.newState != WindowEvent.WINDOW_CLOSED) {
-            val source = e.source as AsDesktop
+            val source = e.source as DesktopNotify
             // these don't work
             //toFront()
             //requestFocus()

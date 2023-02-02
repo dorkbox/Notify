@@ -18,9 +18,29 @@ package dorkbox.notify
 import java.awt.event.MouseAdapter
 import java.awt.event.MouseEvent
 
-internal class ClickAdapter : MouseAdapter() {
+internal class AppMouseAdapter : MouseAdapter() {
+
+    override fun mouseEntered(e: MouseEvent) {
+        val notifyCanvas = e.source as AppNotify
+        notifyCanvas.mouseOver = true
+    }
+
+    override fun mouseExited(e: MouseEvent) {
+        val notifyCanvas = e.source as AppNotify
+        notifyCanvas.mouseOver = false
+    }
+
+    override fun mouseMoved(e: MouseEvent) {
+        val notifyCanvas = e.source as AppNotify
+        notifyCanvas.mouseX = e.x
+        notifyCanvas.mouseY = e.y
+    }
+
+    override fun mouseDragged(e: MouseEvent) {
+    }
+
     override fun mouseReleased(e: MouseEvent) {
-        val notifyCanvas = e.source as NotifyCanvas
+        val notifyCanvas = e.source as AppNotify
         notifyCanvas.onClick(e.x, e.y)
     }
 }

@@ -53,6 +53,31 @@ class Notify private constructor() {
         const val DIALOG_ERROR = "dialog-error.png"
 
         /**
+         * The width of a notification
+         */
+        @Property
+        var WIDTH = 300
+
+        /**
+         * The height of a notification
+         */
+        @Property
+        var HEIGHT = 87
+
+        /**
+         * The space between notifications
+         */
+        @Property
+        var SPACER = 10
+
+        /**
+         * The space between notifications and the edge of the <screen>/<application border>
+         */
+        @Property
+        var MARGIN = 20
+
+
+        /**
          * This is the title font used by a notification.
          */
         @Property
@@ -152,31 +177,27 @@ class Notify private constructor() {
     }
 
     @Volatile
-    private var notifyCanvas: NotifyCanvas? = null
-    @Volatile
-    internal  var notifyPopup: NotifyType? = null
-    @Volatile
-    internal var notifyLook: LookAndFeel? = null
+    internal  var notifyPopup: NotifyType<*>? = null
 
     @Volatile
     var title = "Notification"
         set(value) {
             field = value
-            notifyCanvas?.refresh()
+            notifyPopup?.refresh()
         }
 
     @Volatile
     var text = "Lorem ipsum"
         set(value) {
             field = value
-            notifyCanvas?.refresh()
+            notifyPopup?.refresh()
         }
 
     @Volatile
     var theme = Theme.defaultLight
         set(value) {
             field = value
-            notifyCanvas?.refresh()
+            notifyPopup?.refresh()
         }
 
     @Volatile
@@ -192,7 +213,7 @@ class Notify private constructor() {
     var hideCloseButton = false
         set(value) {
             field = value
-            notifyCanvas?.refresh()
+            notifyPopup?.refresh()
         }
 
     @Volatile
@@ -202,7 +223,7 @@ class Notify private constructor() {
     var image: ImageIcon? = null
         set(value) {
             field = value
-            notifyCanvas?.refresh()
+            notifyPopup?.refresh()
         }
 
     /**
@@ -312,7 +333,7 @@ class Notify private constructor() {
      */
     fun theme(theme: Theme): Notify {
         this.theme = theme
-        notifyCanvas?.refresh()
+        notifyPopup?.refresh()
         return this
     }
 
@@ -321,7 +342,7 @@ class Notify private constructor() {
      */
     fun hideCloseButton(): Notify {
         hideCloseButton = true
-        notifyCanvas?.refresh()
+        notifyPopup?.refresh()
         return this
     }
 
@@ -329,7 +350,6 @@ class Notify private constructor() {
      * Shows the notification with the built-in 'warning' image.
      */
     fun showWarning() {
-        title = DIALOG_WARNING
         image = getImage(DIALOG_WARNING)
         show()
     }
@@ -338,7 +358,6 @@ class Notify private constructor() {
      * Shows the notification with the built-in 'information' image.
      */
     fun showInformation() {
-        title = "Information"
         image = getImage(DIALOG_INFORMATION)
         show()
     }
@@ -347,7 +366,6 @@ class Notify private constructor() {
      * Shows the notification with the built-in 'error' image.
      */
     fun showError() {
-        title = "Error"
         image = getImage(DIALOG_ERROR)
         show()
     }
@@ -356,7 +374,6 @@ class Notify private constructor() {
      * Shows the notification with the built-in 'confirm' image.
      */
     fun showConfirm() {
-        title = "Confirm"
         image = getImage(DIALOG_CONFIRM)
         show()
     }
@@ -370,7 +387,7 @@ class Notify private constructor() {
 
         // must be done in the swing EDT
         SwingUtil.invokeAndWaitQuietly {
-            if (notify.notifyCanvas != null) {
+            if (notify.notifyPopup != null) {
                 return@invokeAndWaitQuietly
             }
 
@@ -378,28 +395,19 @@ class Notify private constructor() {
             val shakeDuration = notify.shakeDurationInMillis
             val shakeAmp = notify.shakeAmplitude
 
-            val notifyCanvas = NotifyCanvas(notify, notify.image, theme)
-
-            val notifyPopup: NotifyType
-            val look: LookAndFeel
-
-            if (window == null) {
-                notifyPopup = AsDesktop(notify, notifyCanvas)
-                look = AsDesktopLAF(notify, notifyCanvas, notifyPopup, LAFUtil.getGraphics(notify.screen))
+            val notifyPopup = if (window == null) {
+                DesktopNotify(notify)
             } else {
-                notifyPopup = AsApplication(notify, notifyCanvas)
-                look = AsApplicationLAF(notify, notifyCanvas, window, window.bounds)
+                AppNotify(notify)
             }
 
-            notifyPopup.setVisible(true, look)
+            notifyPopup.setVisible(true)
 
             if (shakeDuration > 0) {
-                look.shake(shakeDuration, shakeAmp)
+                notifyPopup.shake(shakeDuration, shakeAmp)
             }
 
-            notify.notifyCanvas = notifyCanvas
             notify.notifyPopup = notifyPopup
-            notify.notifyLook = look
         }
     }
 
@@ -413,10 +421,10 @@ class Notify private constructor() {
         shakeDurationInMillis = durationInMillis
         shakeAmplitude = amplitude
 
-        val popupLook = notifyLook
-        if (popupLook != null) {
+        val popup = notifyPopup
+        if (popup !== null) {
             // must be done in the swing EDT
-            SwingUtil.invokeLater { popupLook.shake(durationInMillis, amplitude) }
+            SwingUtil.invokeLater { popup.shake(durationInMillis, amplitude) }
         }
         return this
     }
@@ -426,11 +434,9 @@ class Notify private constructor() {
      */
     fun close() {
         val popup = notifyPopup
-        val look = notifyLook
-        if (popup !== null && look != null) {
+        if (popup !== null) {
             // must be done in the swing EDT
             SwingUtil.invokeLater {
-                look.close()
                 popup.close()
             }
         }
@@ -448,29 +454,36 @@ class Notify private constructor() {
      * Attaches this notification to a specific JFrame, instead of having a global notification
      */
     fun attach(frame: JFrame?): Notify {
-        attachedFrame = frame
+        this.attachedFrame = frame
         return this
     }
 
 
 
-    // called when this notification is closed. called in the swing EDT!
-    internal fun onClose() {
-        this.notifyPopup!!.close()
-        this.notifyLook!!.close()
 
-        this.onCloseAction.invoke(this)
+    internal fun onClose() {
+        // we can close in different ways.
+        // 1) via the close button
+        // 2) expiration of the tween
+        // 3) manually closing the notification
+        // all events arrive via the active renderer event queue, so effectively single threaded
+
+        if (notifyPopup != null) {
+            this.notifyPopup!!.close()
+
+            // we want the event dispatched on the Swing EDT. This is called by the active renderer
+            SwingUtil.invokeLater {
+                this.onCloseAction.invoke(this)
+            }
+        }
 
         notifyPopup = null
-        notifyLook = null
-        notifyCanvas = null
     }
 
     internal fun onClickAction() {
-        this.onClickAction.invoke(this)
-    }
-
-    internal fun doLayoutForApp() {
-        notifyLook?.reLayout(attachedFrame!!.bounds)
+        // we want the event dispatched on the Swing EDT. This is called by the active renderer
+        SwingUtil.invokeLater {
+            this.onClickAction.invoke(this)
+        }
     }
 }

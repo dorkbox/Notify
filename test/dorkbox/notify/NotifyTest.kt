@@ -48,13 +48,16 @@ object NotifyTest {
             e.printStackTrace()
         }
 
-//        bottomRightInFrame(3, frame)
-//        topLeftInFrame(3, frame)
+        image!!
 
-//        react()
-        topRightMonitor(2)
-//        bottomLeftScaled(3, frame, image)
-//        bottomLeftStacking(3, frame, image)
+        bottomRightInFrame(3, frame)
+        topLeftInFrame(2, frame)
+
+        react()
+//        topRightMonitor(4)
+//        topAndBottomRightMonitor(1)
+//        bottomLeftScaled(image)
+//        bottomLeftStacking(3, image)
     }
 
     fun react() {
@@ -82,14 +85,37 @@ object NotifyTest {
     }
 
     private fun topRightMonitor(count: Int) {
-        var notify: Notify
-
         for (i in 0 until count) {
-            notify = Notify.create()
+            var notify = Notify.create()
                     .title("Notify title $i")
                     .text("This is a notification " + i + " popup message This is a notification popup message This is a " +
                             "notification popup message")
-                    .hideAfter(130000)
+                    .position(Position.TOP_RIGHT)
+                    // .setScreen(0)
+                    .theme(Theme.defaultDark)
+                    // .shake(1300, 4)
+                    .shake(18300, 10)
+//                    .hideCloseButton()
+                    .onClickAction { System.err.println("Notification $i clicked on!") }
+            if (i == 0) {
+                notify.hideAfter(2100)
+            }
+            notify.show()
+            try {
+                Thread.sleep(1000)
+            } catch (e: InterruptedException) {
+                e.printStackTrace()
+            }
+        }
+    }
+
+    private fun topAndBottomRightMonitor(count: Int) {
+        for (i in 0 until count) {
+             Notify.create()
+                    .title("Notify title $i")
+                    .text("This is a notification " + i + " top popup message This is a notification popup message This is a " +
+                            "notification popup message")
+                    .hideAfter(4300)
                     .position(Position.TOP_RIGHT)
                     // .setScreen(0)
                     .theme(Theme.defaultDark)
@@ -97,7 +123,21 @@ object NotifyTest {
 //                    .shake(4300, 10)
 //                    .hideCloseButton()
                     .onClickAction { System.err.println("Notification $i clicked on!") }
-            notify.show()
+                    .show()
+
+            Notify.create()
+                .title("Notify title $i")
+                .text("This is a notification " + i + " bottom popup message This is a notification popup message This is a " +
+                              "notification popup message")
+                .hideAfter(4300)
+                .position(Position.BOTTOM_RIGHT)
+                // .setScreen(0)
+                .theme(Theme.defaultDark)
+                // .shake(1300, 4)
+//                    .shake(4300, 10)
+//                    .hideCloseButton()
+                .onClickAction { System.err.println("Notification $i clicked on!") }
+                .show()
             try {
                 Thread.sleep(2000)
             } catch (e: InterruptedException) {
@@ -183,14 +223,15 @@ object NotifyTest {
                 .title("Notify title $i")
                 .text("This is a notification " + i + " popup message This is a notification popup message This is a " +
                               "notification popup message")
-                .hideAfter(13000)
-                .position(Position.BOTTOM_RIGHT) // .position(Pos.CENTER)
+//                .hideAfter(13000)
+                .position(Position.BOTTOM_RIGHT)
+                // .position(Pos.CENTER)
                 // .setScreen(0)
                 .theme(Theme.defaultDark)
                 // .shake(1300, 4)
-                .shake(1300, 10)
+//                .shake(1300, 10)
                 .attach(frame)
-                .hideCloseButton()
+//                .hideCloseButton()
                 .onClickAction { System.err.println("Notification $i clicked on!") }
             notify.showWarning()
 
