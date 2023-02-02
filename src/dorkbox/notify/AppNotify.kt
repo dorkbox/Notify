@@ -97,11 +97,6 @@ internal class AppNotify(override val notification: Notify): Canvas(), NotifyTyp
     private val parent = notification.attachedFrame!!
     private var glassPane: JPanel
 
-    // this makes sure that our notify canvas stay anchored to the parent window (if it's hidden/shown/moved/etc)
-    private val parentListener = AppComponentListener(this)
-    private val windowStateListener = AppWindowStateListener(this)
-
-
     // this is on the swing EDT
     init {
         val actualSize = Dimension(Notify.WIDTH, Notify.HEIGHT)
@@ -123,9 +118,6 @@ internal class AppNotify(override val notification: Notify): Canvas(), NotifyTyp
 
         anchorX = getAnchorX(notification.position, parent.bounds)
         anchorY = getAnchorY(notification.position, parent.bounds)
-
-        parent.addWindowStateListener(windowStateListener)
-        parent.addComponentListener(parentListener)
 
         val pane = parent.glassPane
         if (pane is JPanel) {
@@ -169,57 +161,12 @@ internal class AppNotify(override val notification: Notify): Canvas(), NotifyTyp
         return super.getY()
     }
 
-
-    // when the parent window moves, we stop all animation and snap the popup into place. This simplifies logic greatly
-    fun reLayout() {
-        val bounds = parent.bounds
-        anchorX = getAnchorX(notification.position, bounds)
-        anchorY = getAnchorY(notification.position, bounds)
-//
-//        val growDown = growDown(this)
-//
-//        if (tween != null) {
-//            tween!!.cancel() // cancel does its thing on the next tick of animation cycle
-//            tween = null
-//        }
-//
-//
-//        var changedY: Int
-//        if (popupIndex == 0) {
-//            changedY = anchorY
-//        } else {
-//            synchronized(popups) {
-//                val id = idAndPosition
-//                val looks = popups[id]
-//                changedY = if (looks != null) {
-//                    if (growDown) {
-//                        anchorY + popupIndex * (NotifyCanvas.HEIGHT + SPACER)
-//                    } else {
-//                        anchorY - popupIndex * (NotifyCanvas.HEIGHT + SPACER)
-//                    }
-//                } else {
-//                    anchorY
-//                }
-//            }
-//        }
-//
-//        setLocation(anchorX, changedY)
-    }
-
     override fun refresh() {
         cachedImage = renderBackgroundInfo(notification.title, notification.text, notification.theme, notification.image)
         cachedClose = renderCloseButton(notification.theme, false)
         cachedCloseEnabled = renderCloseButton(notification.theme, true)
 
         idAndPosition = parent.name + ":" + notification.position
-
-        val growDown = LAFUtil.growDown(this)
-
-        val offset = if (growDown) {
-            Notify.MARGIN
-        } else {
-            -Notify.MARGIN
-        }
 
         anchorX = getAnchorX(notification.position, parent.bounds)
         anchorY = getAnchorY(notification.position, parent.bounds)
@@ -231,8 +178,6 @@ internal class AppNotify(override val notification: Notify): Canvas(), NotifyTyp
         // use our cached image, so we don't have to re-render text/background/etc
         try {
             g.drawImage(cachedImage, 0, 0, null)
-
-//            println("$mouseX, $mouseY")
 
             if (mouseOver && mouseX >= 280 && mouseY <= 20) {
                 g.drawImage(cachedCloseEnabled, 0, 0, null)
@@ -368,9 +313,6 @@ internal class AppNotify(override val notification: Notify): Canvas(), NotifyTyp
         cancelShake()
 
         glassPane.remove(this)
-
-        parent.removeWindowStateListener(windowStateListener)
-        parent.removeComponentListener(parentListener)
 
         removeMouseMotionListener(mouseListener)
         removeMouseListener(mouseListener)
