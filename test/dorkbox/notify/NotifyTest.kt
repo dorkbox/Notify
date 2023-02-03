@@ -50,11 +50,11 @@ object NotifyTest {
 
         image!!
 
-        bottomRightInFrame(3, frame)
-        topLeftInFrame(2, frame)
+//        bottomRightInFrame(3, frame)
+//        topLeftInFrame(2, frame)
 
-        react()
-//        topRightMonitor(4)
+//        react()
+        topRightMonitor(4)
 //        topAndBottomRightMonitor(1)
 //        bottomLeftScaled(image)
 //        bottomLeftStacking(3, image)
@@ -94,12 +94,12 @@ object NotifyTest {
                     // .setScreen(0)
                     .theme(Theme.defaultDark)
                     // .shake(1300, 4)
-                    .shake(18300, 10)
+//                    .shake(18300, 10)
 //                    .hideCloseButton()
                     .onClickAction { System.err.println("Notification $i clicked on!") }
-            if (i == 0) {
+//            if (i == 0) {
                 notify.hideAfter(2100)
-            }
+//            }
             notify.show()
             try {
                 Thread.sleep(1000)
@@ -229,7 +229,7 @@ object NotifyTest {
                 // .setScreen(0)
                 .theme(Theme.defaultDark)
                 // .shake(1300, 4)
-//                .shake(1300, 10)
+                .shake(13200, 10)
                 .attach(frame)
 //                .hideCloseButton()
                 .onClickAction { System.err.println("Notification $i clicked on!") }

@@ -104,7 +104,7 @@ dependencies {
     api("com.dorkbox:TweenEngine:8.3.1")
     api("com.dorkbox:SwingActiveRender:1.3")
     api("com.dorkbox:Utilities:1.39")
-    api("com.dorkbox:PropertyLoader:1.1")
+    api("com.dorkbox:PropertyLoader:1.2")
 }
 
 publishToSonatype {

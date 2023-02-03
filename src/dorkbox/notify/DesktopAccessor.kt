@@ -22,7 +22,8 @@ internal class DesktopAccessor : TweenAccessor<DesktopNotify> {
         const val X_POS = 0
         const val Y_POS = 1
         const val X_Y_POS = 2
-        const val PROGRESS = 3
+        const val SHAKE = 3
+        const val PROGRESS = 4
     }
 
     override fun getValues(target: DesktopNotify, tweenType: Int, returnValues: FloatArray): Int {
@@ -38,6 +39,12 @@ internal class DesktopAccessor : TweenAccessor<DesktopNotify> {
             }
 
             X_Y_POS -> {
+                returnValues[0] = target.x.toFloat()
+                returnValues[1] = target.y.toFloat()
+                return 2
+            }
+
+            SHAKE -> {
                 returnValues[0] = target.x.toFloat()
                 returnValues[1] = target.y.toFloat()
                 return 2
@@ -64,6 +71,11 @@ internal class DesktopAccessor : TweenAccessor<DesktopNotify> {
             }
 
             X_Y_POS -> {
+                target.setLocationInternal(newValues[0].toInt(), newValues[1].toInt())
+                return
+            }
+
+            SHAKE -> {
                 target.setLocationInternal(newValues[0].toInt(), newValues[1].toInt())
                 return
             }

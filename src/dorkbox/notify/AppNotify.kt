@@ -259,7 +259,7 @@ internal class AppNotify(override val notification: Notify): Canvas(), NotifyTyp
     override fun doShake(count: Int, targetX: Float, targetY: Float) {
         if (shakeTween != null) {
             shakeTween!!.valueRelative(targetX, targetY)
-                .repeatAutoReverse(count, 0f)
+                        .repeatAutoReverse(count, 0f)
         } else {
             val tween = tweenEngine
                 .to(this, AppAccessor.X_Y_POS, tweenAccessor, 0.05f)
