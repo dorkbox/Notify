@@ -20,17 +20,7 @@ import java.awt.event.MouseEvent
 
 internal class DesktopMouseAdapter : MouseAdapter() {
 
-    override fun mouseEntered(e: MouseEvent) {
-        val notifyCanvas = e.source as DesktopNotify
-        notifyCanvas.mouseOver = true
-    }
-
-    override fun mouseExited(e: MouseEvent) {
-        val notifyCanvas = e.source as DesktopNotify
-        notifyCanvas.mouseOver = false
-    }
-
-    override fun mouseReleased(e: MouseEvent) {
+    override fun mousePressed(e: MouseEvent) {
         val notifyCanvas = e.source as DesktopNotify
         notifyCanvas.onClick()
     }
