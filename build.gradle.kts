@@ -26,10 +26,10 @@ gradle.startParameter.showStacktrace = ShowStacktrace.ALWAYS_FULL   // always sh
 gradle.startParameter.warningMode = WarningMode.All
 
 plugins {
-    id("com.dorkbox.GradleUtils") version "3.11"
-    id("com.dorkbox.Licensing") version "2.20"
-    id("com.dorkbox.VersionUpdate") version "2.6"
-    id("com.dorkbox.GradlePublish") version "1.17"
+    id("com.dorkbox.GradleUtils") version "3.13"
+    id("com.dorkbox.Licensing") version "2.22"
+    id("com.dorkbox.VersionUpdate") version "2.7"
+    id("com.dorkbox.GradlePublish") version "1.18"
 
     kotlin("jvm") version "1.8.0"
 }
@@ -101,9 +101,9 @@ tasks.jar.get().apply {
 }
 
 dependencies {
-    api("com.dorkbox:TweenEngine:8.3.1")
+    api("com.dorkbox:TweenEngine:9.0")
     api("com.dorkbox:SwingActiveRender:1.3")
-    api("com.dorkbox:Utilities:1.39")
+    api("com.dorkbox:Utilities:1.40")
     api("com.dorkbox:PropertyLoader:1.2")
 }
 
