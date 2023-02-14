@@ -53,8 +53,6 @@ internal interface NotifyType<T> {
     var anchorX: Int
     var anchorY: Int
 
-    fun getX(): Int
-    fun getY(): Int
 
     // for the progress bar. we directly draw this onscreen
     // non-volatile because it's always accessed in the active render thread

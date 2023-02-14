@@ -72,10 +72,12 @@ internal class AppNotify(override val notification: Notify): Canvas(), NotifyTyp
 
     // for the progress bar. we directly draw this onscreen
     // non-volatile because it's always accessed in the active render thread
+    private var prevProgress = 0
     override var progress = 0
-
-    @Volatile
-    var mouseOver = false
+        set(value) {
+            prevProgress = field
+            field = value
+        }
 
     override var shakeTween: Tween<AppNotify>? = null
     override var moveTween: Tween<AppNotify>? = null
@@ -88,6 +90,11 @@ internal class AppNotify(override val notification: Notify): Canvas(), NotifyTyp
     override var anchorX = 0
     override var anchorY = 0
 
+    // the ONLY reason "shake" works, is because we configure the target X/Y location for moving based on where we WANT the popup to go
+    // and completely ignoring its current position
+    var shakeX = 0
+    var shakeY = 0
+
 
     @Volatile
     var mouseY = 0
@@ -99,6 +106,9 @@ internal class AppNotify(override val notification: Notify): Canvas(), NotifyTyp
 
     // this is on the swing EDT
     init {
+        addMouseListener(mouseListener)
+        addMouseMotionListener(mouseListener)
+
         val actualSize = Dimension(Notify.WIDTH, Notify.HEIGHT)
 
         preferredSize = actualSize
@@ -108,10 +118,6 @@ internal class AppNotify(override val notification: Notify): Canvas(), NotifyTyp
 
         isFocusable = true
         background = notification.theme.panel_BG
-
-
-        addMouseListener(mouseListener)
-        addMouseMotionListener(mouseListener)
 
 
         idAndPosition = parent.name + ":" + notification.position
@@ -152,14 +158,6 @@ internal class AppNotify(override val notification: Notify): Canvas(), NotifyTyp
         refresh()
     }
 
-    override fun getX(): Int {
-        return super.getX()
-    }
-
-    override fun getY(): Int {
-        return super.getY()
-    }
-
     override fun refresh() {
         cachedImage = renderBackgroundInfo(notification.title, notification.text, notification.theme, notification.image)
         cachedClose = renderCloseButton(notification.theme, false)
@@ -173,16 +171,8 @@ internal class AppNotify(override val notification: Notify): Canvas(), NotifyTyp
 
     override fun paint(g: Graphics) {
         // we cache the text + image (to an image), the two stats of the close "button" and then always render the close + progressbar
-
-        // use our cached image, so we don't have to re-render text/background/etc
         try {
-            g.drawImage(cachedImage, 0, 0, null)
-
-            if (mouseOver && mouseX >= 280 && mouseY <= 20) {
-                g.drawImage(cachedCloseEnabled, 0, 0, null)
-            } else {
-                g.drawImage(cachedClose, 0, 0, null)
-            }
+            draw(g)
         } catch (ignored: Exception) {
             // have also seen (happened after screen/PC was "woken up", in Xubuntu 16.04):
             // java.lang.ClassCastException:sun.awt.image.BufImgSurfaceData cannot be cast to sun.java2d.xr.XRSurfaceData at sun.java2d.xr.XRPMBlitLoops.cacheToTmpSurface(XRPMBlitLoops.java:148)
@@ -203,22 +193,41 @@ internal class AppNotify(override val notification: Notify): Canvas(), NotifyTyp
 
             // try to draw again
             try {
-                g.drawImage(cachedImage, 0, 0, null)
-
-                if (mouseOver && mouseX >= NotifyType.closeX && mouseY <= 20) {
-                    g.drawImage(cachedCloseEnabled, 0, 0, null)
-                } else {
-                    g.drawImage(cachedClose, 0, 0, null)
-                }
+                draw(g)
             } catch (ignored2: Exception) {
             }
         }
 
         // the progress bar can change, so we always draw it every time
-        if (progress > 0) {
+        if (progress > 0 && prevProgress != progress) {
             // draw the progress bar along the bottom
             g.color = notification.theme.progress_FG
             g.fillRect(0, Notify.HEIGHT - 2, progress, 2)
+        }
+    }
+
+    private fun draw(g: Graphics) {
+        g.drawImage(cachedImage, 0, 0, null)
+
+        if (!notification.hideCloseButton) {
+            if (mouseX >= 280 && mouseY <= 20) {
+                g.drawImage(cachedCloseEnabled, 0, 0, null)
+            } else {
+                g.drawImage(cachedClose, 0, 0, null)
+            }
+        }
+    }
+
+    fun onClick(x: Int, y: Int) {
+        // Check - we were over the 'X' (and thus no notify), or was it in the general area?
+        val isClickOnCloseButton = !notification.hideCloseButton && x >= 280 && y <= 20
+
+        if (isClickOnCloseButton) {
+            // we always close the notification popup
+            notification.onClose()
+        } else {
+            // only call the general click handler IF we click in the general area!
+            notification.onClickAction()
         }
     }
 
@@ -259,10 +268,10 @@ internal class AppNotify(override val notification: Notify): Canvas(), NotifyTyp
     override fun doShake(count: Int, targetX: Float, targetY: Float) {
         if (shakeTween != null) {
             shakeTween!!.valueRelative(targetX, targetY)
-                        .repeatAutoReverse(count, 0f)
+                .repeatAutoReverse(count, 0f)
         } else {
             val tween = tweenEngine
-                .to(this, AppAccessor.X_Y_POS, tweenAccessor, 0.05f)
+                .to(this, AppAccessor.SHAKE, tweenAccessor, 0.05f)
                 .valueRelative(targetX, targetY)
                 .repeatAutoReverse(count, 0f)
                 .ease(TweenEquations.Linear)
@@ -272,19 +281,12 @@ internal class AppNotify(override val notification: Notify): Canvas(), NotifyTyp
         }
     }
 
-    fun onClick(x: Int, y: Int) {
-        // Check - we were over the 'X' (and thus no notify), or was it in the general area?
-
-        val isClickOnCloseButton = !notification.hideCloseButton && x >= 280 && y <= 20
-
-        // reasonable position for detecting mouse over
-        if (isClickOnCloseButton) {
-            // we always close the notification popup
-            notification.onClose()
-        } else {
-            // only call the general click handler IF we click in the general area!
-            notification.onClickAction()
-        }
+    fun setLocationShake(x: Int, y: Int) {
+        val x1 = getX() - shakeX
+        val y1 = getY() - shakeY
+        shakeX = x
+        shakeY = y
+        setLocationInternal(x1 + x, y1 + y)
     }
 
     override fun setLocationInternal(x: Int, y: Int) {
@@ -292,6 +294,7 @@ internal class AppNotify(override val notification: Notify): Canvas(), NotifyTyp
     }
 
     // this is called during parent initialization (before we are initialized), so we cannot access objects here properly!
+    // NOTE: This is present here because DesktopNotify requires it (and consistency is important)
 //    override fun setLocation(x: Int, y: Int) {
 //        super.setLocation(x, y)
 //    }
@@ -301,7 +304,6 @@ internal class AppNotify(override val notification: Notify): Canvas(), NotifyTyp
         updatePositionsPre(this, this, visible)
         updatePositionsPost(this, this, visible)
     }
-
 
     // called on the Swing EDT.
     override fun close() {

@@ -71,13 +71,15 @@ internal class DesktopNotify(override val notification: Notify) : JWindow(), Not
 
     // for the progress bar. we directly draw this onscreen
     // non-volatile because it's always accessed in the active render thread
+    private var prevProgress = 0
     override var progress = 0
+        set(value) {
+            prevProgress = field
+            field = value
+        }
 
     // The button is "hittable" from the entire corner
     private val closeButton: Rectangle
-
-    @Volatile
-    var mouseOver = false
 
     override var shakeTween: Tween<DesktopNotify>? = null
     override var moveTween: Tween<DesktopNotify>? = null
@@ -89,6 +91,11 @@ internal class DesktopNotify(override val notification: Notify) : JWindow(), Not
 
     override var anchorX = 0
     override var anchorY = 0
+
+    // the ONLY reason "shake" works, is because we configure the target X/Y location for moving based on where we WANT the popup to go
+    // and completely ignoring its current position
+    var shakeX = 0
+    var shakeY = 0
 
 
     // this is on the swing EDT
@@ -115,14 +122,6 @@ internal class DesktopNotify(override val notification: Notify) : JWindow(), Not
         refresh()
     }
 
-    override fun getX(): Int {
-        return super.getX()
-    }
-
-    override fun getY(): Int {
-        return super.getY()
-    }
-
     override fun refresh() {
         cachedImage = renderBackgroundInfo(notification.title, notification.text, notification.theme, notification.image)
         cachedClose = renderCloseButton(notification.theme, false)
@@ -138,8 +137,92 @@ internal class DesktopNotify(override val notification: Notify) : JWindow(), Not
         anchorY = getAnchorY(notification.position, bounds) + calculateOffset(growDown, point)
     }
 
+    /**
+     * have to adjust for offsets when the window-manager has a toolbar that consumes space and prevents overlap.
+     */
+    private fun calculateOffset(showFromTop: Boolean, point: Point): Int {
+        val gc = ScreenUtil.getMonitorAtLocation(point).defaultConfiguration
+        val screenInsets = Toolkit.getDefaultToolkit().getScreenInsets(gc)
+
+        if (showFromTop) {
+            if (screenInsets.top > 0) {
+                return screenInsets.top - Notify.MARGIN
+            }
+        } else {
+            if (screenInsets.bottom > 0) {
+                return screenInsets.bottom + Notify.MARGIN
+            }
+        }
+
+        return 0
+    }
+
+    override fun paint(g: Graphics) {
+        // we cache the text + image (to an image), the two states of the close "button" and then always render the progressbar
+        try {
+            draw(g)
+        } catch (ignored: Exception) {
+            // have also seen (happened after screen/PC was "woken up", in Xubuntu 16.04):
+            // java.lang.ClassCastException:sun.awt.image.BufImgSurfaceData cannot be cast to sun.java2d.xr.XRSurfaceData at sun.java2d.xr.XRPMBlitLoops.cacheToTmpSurface(XRPMBlitLoops.java:148)
+            // at sun.java2d.xr.XrSwToPMBlit.Blit(XRPMBlitLoops.java:356)
+            // at sun.java2d.SurfaceDataProxy.updateSurfaceData(SurfaceDataProxy.java:498)
+            // at sun.java2d.SurfaceDataProxy.replaceData(SurfaceDataProxy.java:455)
+            // at sun.java2d.SurfaceData.getSourceSurfaceData(SurfaceData.java:233)
+            // at sun.java2d.pipe.DrawImage.renderImageCopy(DrawImage.java:566)
+            // at sun.java2d.pipe.DrawImage.copyImage(DrawImage.java:67)
+            // at sun.java2d.pipe.DrawImage.copyImage(DrawImage.java:1014)
+            // at sun.java2d.pipe.ValidatePipe.copyImage(ValidatePipe.java:186)
+            // at sun.java2d.SunGraphics2D.drawImage(SunGraphics2D.java:3318)
+            // at sun.java2d.SunGraphics2D.drawImage(SunGraphics2D.java:3296)
+            // at dorkbox.notify.NotifyCanvas.paint(NotifyCanvas.java:92)
+
+            // redo the cache
+            refresh()
+
+            // try to draw again
+            try {
+                draw(g)
+            } catch (ignored2: Exception) {
+            }
+        }
+
+        // the progress bar can change (only getting bigger!), so we always draw it when it grows
+        if (progress > 0 && prevProgress != progress) {
+            // draw the progress bar along the bottom
+            g.color = notification.theme.progress_FG
+            g.fillRect(0, Notify.HEIGHT - 2, progress, 2)
+        }
+    }
+
+    private fun draw(g: Graphics) {
+        g.drawImage(cachedImage, 0, 0, null)
+
+        if (!notification.hideCloseButton) {
+            if (closeButton.contains(MouseInfo.getPointerInfo().location)) {
+                g.drawImage(cachedCloseEnabled, 0, 0, null)
+            } else {
+                g.drawImage(cachedClose, 0, 0, null)
+            }
+        }
+    }
+
+    fun onClick() {
+        // Check - we were over the 'X' (and thus no notify), or was it in the general area
+        val isClickOnCloseButton = !notification.hideCloseButton && closeButton.contains(MouseInfo.getPointerInfo().location)
+
+        if (isClickOnCloseButton) {
+            // we always close the notification popup
+            notification.onClose()
+        } else {
+            // only call the general click handler IF we click in the general area!
+            notification.onClickAction()
+        }
+    }
+
     override fun setupHide() {
-        if (hideTween == null && notification.hideAfterDurationInMillis > 0) {
+        if (hideTween != null) {
+            hideTween!!.value(Notify.WIDTH.toFloat())
+        } else if (notification.hideAfterDurationInMillis > 0) {
             // begin a timeline to get rid of the popup (default is 5 seconds)
             val tween = tweenEngine
                 .to(this, DesktopAccessor.PROGRESS, tweenAccessor, notification.hideAfterDurationInMillis / 1000.0f)
@@ -174,12 +257,12 @@ internal class DesktopNotify(override val notification: Notify) : JWindow(), Not
 
     override fun doShake(count: Int, targetX: Float, targetY: Float) {
         if (shakeTween != null) {
-            shakeTween!!.valueRelative(targetX, targetY)
+            shakeTween!!.value(targetX, targetY)
                         .repeatAutoReverse(count, 0f)
         } else {
             val tween = tweenEngine
-                .to(this, DesktopAccessor.X_Y_POS, tweenAccessor, 0.05f)
-                .valueRelative(targetX, targetY)
+                .to(this, DesktopAccessor.SHAKE, tweenAccessor, 0.05f)
+                .value(targetX, targetY)
                 .repeatAutoReverse(count, 0f)
                 .ease(TweenEquations.Linear)
 
@@ -188,85 +271,12 @@ internal class DesktopNotify(override val notification: Notify) : JWindow(), Not
         }
     }
 
-    override fun paint(g: Graphics) {
-        // we cache the text + image (to an image), the two stats of the close "button" and then always render the close + progressbar
-
-        // use our cached image, so we don't have to re-render text/background/etc
-        try {
-            g.drawImage(cachedImage, 0, 0, null)
-
-            if (mouseOver && closeButton.contains(MouseInfo.getPointerInfo().location)) {
-                g.drawImage(cachedCloseEnabled, 0, 0, null)
-            } else {
-                g.drawImage(cachedClose, 0, 0, null)
-            }
-        } catch (ignored: Exception) {
-            // have also seen (happened after screen/PC was "woken up", in Xubuntu 16.04):
-            // java.lang.ClassCastException:sun.awt.image.BufImgSurfaceData cannot be cast to sun.java2d.xr.XRSurfaceData at sun.java2d.xr.XRPMBlitLoops.cacheToTmpSurface(XRPMBlitLoops.java:148)
-            // at sun.java2d.xr.XrSwToPMBlit.Blit(XRPMBlitLoops.java:356)
-            // at sun.java2d.SurfaceDataProxy.updateSurfaceData(SurfaceDataProxy.java:498)
-            // at sun.java2d.SurfaceDataProxy.replaceData(SurfaceDataProxy.java:455)
-            // at sun.java2d.SurfaceData.getSourceSurfaceData(SurfaceData.java:233)
-            // at sun.java2d.pipe.DrawImage.renderImageCopy(DrawImage.java:566)
-            // at sun.java2d.pipe.DrawImage.copyImage(DrawImage.java:67)
-            // at sun.java2d.pipe.DrawImage.copyImage(DrawImage.java:1014)
-            // at sun.java2d.pipe.ValidatePipe.copyImage(ValidatePipe.java:186)
-            // at sun.java2d.SunGraphics2D.drawImage(SunGraphics2D.java:3318)
-            // at sun.java2d.SunGraphics2D.drawImage(SunGraphics2D.java:3296)
-            // at dorkbox.notify.NotifyCanvas.paint(NotifyCanvas.java:92)
-
-            // redo the cache
-            refresh()
-
-            // try to draw again
-            try {
-                g.drawImage(cachedImage, 0, 0, null)
-
-                if (mouseOver && closeButton.contains(MouseInfo.getPointerInfo().location)) {
-                    g.drawImage(cachedCloseEnabled, 0, 0, null)
-                } else {
-                    g.drawImage(cachedClose, 0, 0, null)
-                }
-            } catch (ignored2: Exception) {
-            }
-        }
-
-        // the progress bar can change, so we always draw it every time
-        if (progress > 0) {
-            // draw the progress bar along the bottom
-            g.color = notification.theme.progress_FG
-            g.fillRect(0, Notify.HEIGHT - 2, progress, 2)
-        }
-    }
-    fun onClick() {
-        // Check - we were over the 'X', or was it in the general area?
-        if (mouseOver && closeButton.contains(MouseInfo.getPointerInfo().location)) {
-            // we always close the notification popup
-            notification.onClose()
-        } else {
-            // only call the general click handler IF we click in the general area!
-            notification.onClickAction()
-        }
-    }
-
-    /**
-     * have to adjust for offsets when the window-manager has a toolbar that consumes space and prevents overlap.
-     */
-    private fun calculateOffset(showFromTop: Boolean, point: Point): Int {
-        val gc = ScreenUtil.getMonitorAtLocation(point).defaultConfiguration
-        val screenInsets = Toolkit.getDefaultToolkit().getScreenInsets(gc)
-
-        if (showFromTop) {
-            if (screenInsets.top > 0) {
-                return screenInsets.top - Notify.MARGIN
-            }
-        } else {
-            if (screenInsets.bottom > 0) {
-                return screenInsets.bottom + Notify.MARGIN
-            }
-        }
-
-        return 0
+    fun setLocationShake(x: Int, y: Int) {
+        val x1 = getX() - shakeX
+        val y1 = getY() - shakeY
+        shakeX = x
+        shakeY = y
+        setLocationInternal(x1 + x, y1 + y)
     }
 
     override fun setLocationInternal(x: Int, y: Int) {
@@ -301,13 +311,13 @@ internal class DesktopNotify(override val notification: Notify) : JWindow(), Not
         cancelHide()
         cancelShake()
 
-        super.setVisible(false)
-
         removeWindowListener(windowCloseListener)
         removeMouseMotionListener(mouseListener)
         removeMouseListener(mouseListener)
 
         updatePositionsPre(component = this, notify = this, visible = false)
+
+        super.setVisible(false)
 
         removeAll()
         dispose()

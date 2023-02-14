@@ -45,8 +45,8 @@ internal class AppAccessor : TweenAccessor<AppNotify> {
             }
 
             SHAKE -> {
-                returnValues[0] = target.x.toFloat()
-                returnValues[1] = target.y.toFloat()
+                returnValues[0] = target.shakeX.toFloat()
+                returnValues[1] = target.shakeY.toFloat()
                 return 2
             }
 
@@ -76,7 +76,7 @@ internal class AppAccessor : TweenAccessor<AppNotify> {
             }
 
             SHAKE -> {
-                target.setLocationInternal(newValues[0].toInt(), newValues[1].toInt())
+                target.setLocationShake(newValues[0].toInt(), newValues[1].toInt())
                 return
             }
 
