@@ -417,7 +417,7 @@ class Notify private constructor() {
      * @param durationInMillis now long it will shake
      * @param amplitude a measure of how much it needs to shake. 4 is a small amount of shaking, 10 is a lot.
      */
-    fun shake(durationInMillis: Int, amplitude: Int): Notify {
+    fun shake(durationInMillis: Int = 2000, amplitude: Int = 4): Notify {
         shakeDurationInMillis = durationInMillis
         shakeAmplitude = amplitude
 
