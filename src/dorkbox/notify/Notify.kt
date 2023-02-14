@@ -76,7 +76,6 @@ class Notify private constructor() {
         @Property
         var MARGIN = 20
 
-
         /**
          * This is the title font used by a notification.
          */
@@ -96,7 +95,7 @@ class Notify private constructor() {
         var MOVE_DURATION = 1.0f
 
         /**
-         * Location of the dialog image resources. By default they must be in the 'resources' directory relative to the application
+         * Location of the dialog image resources. By default, they must be in the 'resources' directory relative to the application
          */
         @Property
         var IMAGE_PATH = "resources"
