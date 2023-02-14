@@ -85,19 +85,19 @@ Maven Info
     <dependency>
       <groupId>com.dorkbox</groupId>
       <artifactId>Notify</artifactId>
-      <version>3.7</version>
+      <version>4.0</version>
     </dependency>
 </dependencies>
 ```
 
 Gradle Info
 ---------
-````
+```
 dependencies {
     ...
-    compile "com.dorkbox:Notify:3.7"
+    compile "com.dorkbox:Notify:4.0"
 }
-````
+```
 
 
 Or if you don't want to use Maven, you can access the files directly here:  
@@ -111,5 +111,4 @@ https://repo1.maven.org/maven2/org/slf4j/slf4j-api/
 
 License
 ---------
-This project is © 2015 dorkbox llc, and is distributed under the terms of the Apache v2.0 License. See file "LICENSE" for further references.
-
+This project is © 2023 dorkbox llc, and is distributed under the terms of the Apache v2.0 License. See file "LICENSE" for further references.
