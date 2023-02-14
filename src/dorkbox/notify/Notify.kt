@@ -104,7 +104,12 @@ class Notify private constructor() {
         /**
          * Gets the version number.
          */
-        const val version = "3.7"
+        const val version = "4.0"
+
+        init {
+            // Add this project to the updates system, which verifies this class + UUID + version information
+            dorkbox.updates.Updates.add(Notify::class.java, "8916aaf704e6457ba139cdd501e41797", version)
+        }
 
         /**
          * Builder pattern to create the notification.

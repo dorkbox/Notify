@@ -38,7 +38,7 @@ object Extras {
     // set for the project
     const val description = "Linux, MacOS, or Windows (notification/growl/toast/) popups for the desktop for Java 8+"
     const val group = "com.dorkbox"
-    const val version = "3.7"
+    const val version = "4.0"
 
     // set as project.ext
     const val name = "Notify"
@@ -101,10 +101,11 @@ tasks.jar.get().apply {
 }
 
 dependencies {
+    api("com.dorkbox:PropertyLoader:1.2")
     api("com.dorkbox:TweenEngine:9.0")
     api("com.dorkbox:SwingActiveRender:1.3")
+    api("com.dorkbox:Updates:1.1")
     api("com.dorkbox:Utilities:1.40")
-    api("com.dorkbox:PropertyLoader:1.2")
 }
 
 publishToSonatype {
