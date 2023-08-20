@@ -103,7 +103,7 @@ dependencies {
     api("com.dorkbox:TweenEngine:9.1")
     api("com.dorkbox:SwingActiveRender:1.4")
     api("com.dorkbox:Updates:1.1")
-    api("com.dorkbox:Utilities:1.45")
+    api("com.dorkbox:Utilities:1.46")
 }
 
 publishToSonatype {
