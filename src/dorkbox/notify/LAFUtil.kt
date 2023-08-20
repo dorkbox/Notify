@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 dorkbox, llc
+ * Copyright 2023 dorkbox, llc
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -18,6 +18,7 @@ package dorkbox.notify
 import dorkbox.swingActiveRender.SwingActiveRender
 import dorkbox.tweenEngine.TweenEngine.Companion.create
 import dorkbox.util.ScreenUtil
+import java.awt.GraphicsDevice
 import java.awt.GraphicsEnvironment
 import java.awt.MouseInfo
 import java.awt.Rectangle
@@ -37,11 +38,15 @@ internal object LAFUtil {
     val RANDOM = Random()
 
     fun getGraphics(screen: Int): Rectangle {
-        val device = if (screen == Short.MIN_VALUE.toInt()) {
+        var device: GraphicsDevice? = null
+
+        if (screen == Short.MIN_VALUE.toInt()) {
             // set screen position based on mouse
             val mouseLocation = MouseInfo.getPointerInfo().location
-            ScreenUtil.getMonitorAtLocation(mouseLocation)
-        } else {
+            device = ScreenUtil.getMonitorAtLocation(mouseLocation)
+        }
+
+        if (device == null) {
             // set screen position based on specified screen
             var screenNumber = screen
             val ge = GraphicsEnvironment.getLocalGraphicsEnvironment()
@@ -53,10 +58,10 @@ internal object LAFUtil {
                 screenNumber = screenDevices.size - 1
             }
 
-            screenDevices[screenNumber]
+            device = screenDevices[screenNumber]
         }
 
-        return device.defaultConfiguration.bounds
+        return device!!.defaultConfiguration.bounds
     }
 
     // only called on the swing EDT thread

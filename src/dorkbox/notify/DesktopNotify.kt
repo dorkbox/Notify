@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 dorkbox, llc
+ * Copyright 2023 dorkbox, llc
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -141,7 +141,7 @@ internal class DesktopNotify(override val notification: Notify) : JWindow(), Not
      * have to adjust for offsets when the window-manager has a toolbar that consumes space and prevents overlap.
      */
     private fun calculateOffset(showFromTop: Boolean, point: Point): Int {
-        val gc = ScreenUtil.getMonitorAtLocation(point).defaultConfiguration
+        val gc = ScreenUtil.getMonitorAtLocation(point)?.defaultConfiguration ?: return 0
         val screenInsets = Toolkit.getDefaultToolkit().getScreenInsets(gc)
 
         if (showFromTop) {
