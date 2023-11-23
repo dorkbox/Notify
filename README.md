@@ -85,7 +85,7 @@ Maven Info
     <dependency>
       <groupId>com.dorkbox</groupId>
       <artifactId>Notify</artifactId>
-      <version>4.3</version>
+      <version>4.4</version>
     </dependency>
 </dependencies>
 ```
@@ -95,7 +95,7 @@ Gradle Info
 ```
 dependencies {
     ...
-    compile "com.dorkbox:Notify:4.3"
+    compile "com.dorkbox:Notify:4.4"
 }
 ```
 
