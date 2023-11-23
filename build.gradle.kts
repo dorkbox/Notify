@@ -35,7 +35,7 @@ object Extras {
     // set for the project
     const val description = "Linux, MacOS, or Windows (notification/growl/toast/) popups for the desktop for Java 8+"
     const val group = "com.dorkbox"
-    const val version = "4.2"
+    const val version = "4.3"
 
     // set as project.ext
     const val name = "Notify"
