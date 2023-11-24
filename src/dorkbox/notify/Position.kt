@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 dorkbox, llc
+ * Copyright 2023 dorkbox, llc
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -27,9 +27,19 @@ enum class Position {
     TOP_RIGHT,
 
     /**
+     * top vertically, center horizontally
+     */
+    TOP,
+
+    /**
      * center both vertically and horizontally
      */
     CENTER,
+
+    /**
+     * bottom vertically, center horizontally
+     */
+    BOTTOM,
 
     /**
      * bottom vertically, left horizontally

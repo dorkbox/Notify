@@ -1,5 +1,5 @@
 /*
- * Copyright 2017 dorkbox, llc
+ * Copyright 2023 dorkbox, llc
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -47,8 +47,11 @@ internal class AppNotify(override val notification: Notify): Canvas(), NotifyTyp
             val screenWidth = bounds.getWidth().toInt()
 
             return when (position) {
+                // LEFT ALIGN
                 Position.TOP_LEFT, Position.BOTTOM_LEFT -> Notify.MARGIN + startX
-                Position.CENTER -> startX + screenWidth / 2 - Notify.WIDTH / 2 - Notify.MARGIN / 2
+                // CENTER ALIGN
+                Position.TOP, Position.CENTER, Position.BOTTOM -> startX + screenWidth / 2 - Notify.WIDTH / 2 - Notify.MARGIN / 2
+                // RIGHT ALIGN
                 Position.TOP_RIGHT, Position.BOTTOM_RIGHT -> startX + screenWidth - Notify.WIDTH - Notify.MARGIN
             }
         }
@@ -58,9 +61,12 @@ internal class AppNotify(override val notification: Notify): Canvas(), NotifyTyp
             val screenHeight = bounds.getHeight().toInt()
 
             return when (position) {
-                Position.TOP_LEFT, Position.TOP_RIGHT -> startY + Notify.MARGIN
+                // TOP ALIGN
+                Position.TOP_LEFT, Position.TOP, Position.TOP_RIGHT -> startY + Notify.MARGIN
+                // CENTER ALIGN
                 Position.CENTER -> startY + screenHeight / 2 - Notify.HEIGHT / 2 - Notify.MARGIN / 2 - Notify.SPACER
-                Position.BOTTOM_LEFT, Position.BOTTOM_RIGHT -> screenHeight - Notify.HEIGHT - Notify.MARGIN - Notify.SPACER * 2
+                // BOTTOM ALIGN
+                Position.BOTTOM_LEFT, Position.BOTTOM, Position.BOTTOM_RIGHT -> screenHeight - Notify.HEIGHT - Notify.MARGIN - Notify.SPACER * 2
             }
         }
     }

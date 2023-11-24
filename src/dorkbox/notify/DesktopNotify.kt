@@ -21,12 +21,7 @@ import dorkbox.tweenEngine.Tween
 import dorkbox.tweenEngine.TweenEquations
 import dorkbox.tweenEngine.TweenEvents
 import dorkbox.util.ScreenUtil
-import java.awt.Dimension
-import java.awt.Graphics
-import java.awt.MouseInfo
-import java.awt.Point
-import java.awt.Rectangle
-import java.awt.Toolkit
+import java.awt.*
 import java.awt.image.BufferedImage
 import javax.swing.JWindow
 
@@ -47,8 +42,11 @@ internal class DesktopNotify(override val notification: Notify) : JWindow(), Not
             val screenWidth = bounds.getWidth().toInt()
 
             return when (position) {
+                // LEFT ALIGN
                 Position.TOP_LEFT, Position.BOTTOM_LEFT -> Notify.MARGIN + startX
-                Position.CENTER -> startX + screenWidth / 2 - Notify.WIDTH / 2 - Notify.MARGIN / 2
+                // CENTER ALIGN
+                Position.TOP, Position.CENTER, Position.BOTTOM -> startX + screenWidth / 2 - Notify.WIDTH / 2 - Notify.MARGIN / 2
+                // RIGHT ALIGN
                 Position.TOP_RIGHT, Position.BOTTOM_RIGHT -> startX + screenWidth - Notify.WIDTH - Notify.MARGIN
             }
         }
@@ -58,9 +56,12 @@ internal class DesktopNotify(override val notification: Notify) : JWindow(), Not
             val screenHeight = bounds.getHeight().toInt()
 
             return when (position) {
-                Position.TOP_LEFT, Position.TOP_RIGHT -> startY + Notify.MARGIN
+                // TOP ALIGN
+                Position.TOP_LEFT, Position.TOP, Position.TOP_RIGHT -> startY + Notify.MARGIN
+                // CENTER ALIGN
                 Position.CENTER -> startY + screenHeight / 2 - Notify.HEIGHT / 2 - Notify.MARGIN / 2
-                Position.BOTTOM_LEFT, Position.BOTTOM_RIGHT -> startY + screenHeight - Notify.HEIGHT - Notify.MARGIN
+                // BOTTOM ALIGN
+                Position.BOTTOM_LEFT, Position.BOTTOM, Position.BOTTOM_RIGHT -> startY + screenHeight - Notify.HEIGHT - Notify.MARGIN
             }
         }
     }
@@ -144,18 +145,15 @@ internal class DesktopNotify(override val notification: Notify) : JWindow(), Not
         val gc = ScreenUtil.getMonitorAtLocation(point)?.defaultConfiguration ?: return 0
         val screenInsets = Toolkit.getDefaultToolkit().getScreenInsets(gc)
 
-        if (showFromTop) {
-            if (screenInsets.top > 0) {
-                return screenInsets.top - Notify.MARGIN
-            }
+        // " - Notify.MARGIN" is required BECAUSE each entry is offset by the margin, and we want the notification to be touching the edge!!
+        return if (showFromTop) {
+            screenInsets.top - Notify.MARGIN
         } else {
-            if (screenInsets.bottom > 0) {
-                return screenInsets.bottom + Notify.MARGIN
-            }
+            -(screenInsets.bottom - Notify.MARGIN)
         }
-
-        return 0
     }
+
+
 
     override fun paint(g: Graphics) {
         // we cache the text + image (to an image), the two states of the close "button" and then always render the progressbar

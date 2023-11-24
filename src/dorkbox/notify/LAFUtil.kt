@@ -152,9 +152,14 @@ internal object LAFUtil {
         }
     }
 
+    /**
+     * Controls which positions will grow the notification stack downwards
+     *
+     * @return true to grow downwards
+     */
     fun growDown(notify: NotifyType<*>): Boolean {
         return when (notify.notification.position) {
-            Position.TOP_LEFT, Position.TOP_RIGHT, Position.CENTER -> true
+            Position.TOP_LEFT, Position.TOP, Position.TOP_RIGHT, Position.CENTER -> true
             else -> false
         }
     }
