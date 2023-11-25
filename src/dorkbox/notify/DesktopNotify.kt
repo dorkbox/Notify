@@ -145,11 +145,10 @@ internal class DesktopNotify(override val notification: Notify) : JWindow(), Not
         val gc = ScreenUtil.getMonitorAtLocation(point)?.defaultConfiguration ?: return 0
         val screenInsets = Toolkit.getDefaultToolkit().getScreenInsets(gc)
 
-        // " - Notify.MARGIN" is required BECAUSE each entry is offset by the margin, and we want the notification to be touching the edge!!
         return if (showFromTop) {
-            screenInsets.top - Notify.MARGIN
+            screenInsets.top
         } else {
-            -(screenInsets.bottom - Notify.MARGIN)
+            -(screenInsets.bottom)
         }
     }
 
