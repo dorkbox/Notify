@@ -206,13 +206,6 @@ internal class AppNotify(override val notification: Notify): Canvas(), NotifyTyp
             } catch (ignored2: Exception) {
             }
         }
-
-        // the progress bar can change, so we always draw it every time
-        if (progress > 0 && prevProgress != progress) {
-            // draw the progress bar along the bottom
-            g.color = notification.theme.progress_FG
-            g.fillRect(0, Notify.HEIGHT - 2, progress, 2)
-        }
     }
 
     private fun draw(g: Graphics) {
@@ -224,6 +217,13 @@ internal class AppNotify(override val notification: Notify): Canvas(), NotifyTyp
             } else {
                 g.drawImage(cachedClose, 0, 0, null)
             }
+        }
+
+        // the progress bar can change, so we always draw it every time
+        if (progress > 0 && prevProgress != progress) {
+            // draw the progress bar along the bottom
+            g.color = notification.theme.progress_FG
+            g.fillRect(0, Notify.HEIGHT - 2, progress, 2)
         }
     }
 

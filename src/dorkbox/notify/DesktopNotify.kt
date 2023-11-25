@@ -182,13 +182,6 @@ internal class DesktopNotify(override val notification: Notify) : JWindow(), Not
             } catch (ignored2: Exception) {
             }
         }
-
-        // the progress bar can change (only getting bigger!), so we always draw it when it grows
-        if (progress > 0 && prevProgress != progress) {
-            // draw the progress bar along the bottom
-            g.color = notification.theme.progress_FG
-            g.fillRect(0, Notify.HEIGHT - 2, progress, 2)
-        }
     }
 
     private fun draw(g: Graphics) {
@@ -200,6 +193,13 @@ internal class DesktopNotify(override val notification: Notify) : JWindow(), Not
             } else {
                 g.drawImage(cachedClose, 0, 0, null)
             }
+        }
+
+        // the progress bar can change (only getting bigger!), so we always draw it when it grows
+        if (progress > 0 && prevProgress != progress) {
+            // draw the progress bar along the bottom
+            g.color = notification.theme.progress_FG
+            g.fillRect(0, Notify.HEIGHT - 2, progress, 2)
         }
     }
 
