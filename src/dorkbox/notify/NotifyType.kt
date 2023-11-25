@@ -1,5 +1,5 @@
 /*
- * Copyright 2015 dorkbox, llc
+ * Copyright 2023 dorkbox, llc
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -170,9 +170,9 @@ internal interface NotifyType<T> {
     /**
      * when using active rendering, we have to add it AFTER we have set the visibility status
      */
-    fun updatePositionsPost(component: java.awt.Component, notify: NotifyType<T>, visible: Boolean) {
+    fun updatePositionsPost(renderComponent: java.awt.Component, notify: NotifyType<T>, visible: Boolean) {
         if (visible) {
-            SwingActiveRender.add(component)
+            SwingActiveRender.add(renderComponent)
             LAFUtil.addPopupToMap(notify)
         }
     }
