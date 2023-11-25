@@ -122,6 +122,7 @@ internal class AppNotify(override val notification: Notify): Canvas(), NotifyTyp
         minimumSize = actualSize
         size = actualSize
 
+        super.setVisible(false)
         isFocusable = true
         background = notification.theme.panel_BG
 
@@ -162,6 +163,8 @@ internal class AppNotify(override val notification: Notify): Canvas(), NotifyTyp
 
         // now we setup the rendering of the image
         refresh()
+
+        setLocation(anchorX, anchorY)
     }
 
     override fun refresh() {
@@ -306,6 +309,8 @@ internal class AppNotify(override val notification: Notify): Canvas(), NotifyTyp
 //    }
 
     override fun setVisible(visible: Boolean) {
+        super.setVisible(visible)
+
         // this is because the order of operations are different based upon visibility.
         updatePositionsPre(this, this, visible)
         updatePositionsPost(this, this, visible)
