@@ -104,7 +104,7 @@ class Notify private constructor() {
         /**
          * Gets the version number.
          */
-        const val version = "4.4"
+        const val version = "4.5"
 
         init {
             // Add this project to the updates system, which verifies this class + UUID + version information
