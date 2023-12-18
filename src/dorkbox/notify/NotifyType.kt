@@ -29,13 +29,13 @@ internal interface NotifyType<T> {
     companion object {
         private val stroke: Stroke = BasicStroke(2f)
 
-        internal const val closeX = 282
+        internal val closeX = Notify.WIDTH - 18
         internal const val closeY = 2
 
         internal const val Y_1 = closeY + 5
-        internal const val X_1 = closeX + 5
+        internal val X_1 = closeX + 5
         internal const val Y_2 = closeY + 11
-        internal const val X_2 = closeX + 11
+        internal val X_2 = closeX + 11
     }
 
     val notification: Notify
