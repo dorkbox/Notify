@@ -19,10 +19,7 @@ import dorkbox.notify.LAFUtil.tweenEngine
 import dorkbox.tweenEngine.Tween
 import dorkbox.tweenEngine.TweenEquations
 import dorkbox.tweenEngine.TweenEvents
-import java.awt.Canvas
-import java.awt.Dimension
-import java.awt.Graphics
-import java.awt.Rectangle
+import java.awt.*
 import java.awt.event.MouseAdapter
 import java.awt.image.BufferedImage
 import javax.swing.JFrame
@@ -78,12 +75,7 @@ internal class AppNotify(override val notification: Notify): Canvas(), NotifyTyp
 
     // for the progress bar. we directly draw this onscreen
     // non-volatile because it's always accessed in the active render thread
-    private var prevProgress = 0
     override var progress = 0
-        set(value) {
-            prevProgress = field
-            field = value
-        }
 
     override var shakeTween: Tween<AppNotify>? = null
     override var moveTween: Tween<AppNotify>? = null
@@ -106,6 +98,19 @@ internal class AppNotify(override val notification: Notify): Canvas(), NotifyTyp
     var mouseY = 0
     @Volatile
     var mouseX = 0
+
+
+
+    @Volatile
+    var lastMousePosition = Point(0,0)
+
+    @Volatile
+    var lastMouseX = 0
+
+    @Volatile
+    var lastMouseY = 0
+
+
 
     private val parent = notification.attachedFrame!!
     private var glassPane: JPanel
@@ -178,8 +183,15 @@ internal class AppNotify(override val notification: Notify): Canvas(), NotifyTyp
         anchorY = getAnchorY(notification.position, parent.bounds)
     }
 
-    override fun paint(g: Graphics) {
-        // we cache the text + image (to an image), the two stats of the close "button" and then always render the close + progressbar
+    override fun paint(gIgnore: Graphics) {
+        // Get the graphics context from the buffer strategy
+        val bufferStrategy = bufferStrategy
+
+        val g = bufferStrategy.drawGraphics
+
+        g.clearRect(0, 0, width, height) // Clear the screen
+
+        // we cache the text + image (to an image), the two states of the close "button" and then always render the progressbar
         try {
             draw(g)
         } catch (ignored: Exception) {
@@ -206,21 +218,48 @@ internal class AppNotify(override val notification: Notify): Canvas(), NotifyTyp
             } catch (ignored2: Exception) {
             }
         }
+
+        // Dispose the graphics context and show the buffer
+        g.dispose()
+        bufferStrategy.show()
     }
+
+
 
     private fun draw(g: Graphics) {
         g.drawImage(cachedImage, 0, 0, null)
 
+        val pad = 2
+
         if (!notification.hideCloseButton) {
-            if (mouseX >= 280 && mouseY <= 20) {
-                g.drawImage(cachedCloseEnabled, 0, 0, null)
+            // there is a SMALL problem, where if we move the mouse fast enough, we can "trick" the close button into thinking that the
+            // mouse is still over it.
+
+            // if the mouse has moved on the screen, but our mouseX/Y  __has not changed__ then we know that the mouse is outside of our
+            // component and we should HIDE the close button.
+            if (mouseX >= NotifyType.X_1-pad && mouseX <= Notify.WIDTH-pad &&
+                mouseY >= 2 && mouseY <= NotifyType.Y_2+5) {
+
+                // now do the extra check!
+                val currentMouse = MouseInfo.getPointerInfo().location
+                if (lastMouseX == mouseX && lastMouseY == mouseY &&
+                    lastMousePosition != currentMouse) {
+
+                    lastMouseX = mouseX
+                    lastMouseY = mouseY
+                    g.drawImage(cachedClose, 0, 0, null)
+                } else {
+                    g.drawImage(cachedCloseEnabled, 0, 0, null)
+                }
+
+
             } else {
                 g.drawImage(cachedClose, 0, 0, null)
             }
         }
 
         // the progress bar can change, so we always draw it every time
-        if (progress > 0 && prevProgress != progress) {
+        if (progress > 0) {
             // draw the progress bar along the bottom
             g.color = notification.theme.progress_FG
             g.fillRect(0, Notify.HEIGHT - 2, progress, 2)
@@ -229,7 +268,7 @@ internal class AppNotify(override val notification: Notify): Canvas(), NotifyTyp
 
     fun onClick(x: Int, y: Int) {
         // Check - we were over the 'X' (and thus no notify), or was it in the general area?
-        val isClickOnCloseButton = !notification.hideCloseButton && x >= 280 && y <= 20
+        val isClickOnCloseButton = !notification.hideCloseButton && x >= (Notify.WIDTH - 20) && y <= 20
 
         if (isClickOnCloseButton) {
             // we always close the notification popup
