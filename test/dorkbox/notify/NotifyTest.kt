@@ -14,8 +14,6 @@
  * limitations under the License.
  */
 
-@file:Suppress("UNUSED_VALUE")
-
 package dorkbox.notify
 
 import dorkbox.util.ImageUtil
@@ -24,25 +22,44 @@ import dorkbox.util.ScreenUtil
 import java.awt.FlowLayout
 import java.awt.Image
 import java.io.IOException
+import java.util.concurrent.*
+import java.util.concurrent.atomic.*
 import javax.imageio.ImageIO
 import javax.swing.JButton
 import javax.swing.JFrame
 import javax.swing.JLabel
 import javax.swing.JPanel
 
+
+
 object NotifyTest {
     @JvmStatic
     fun main(args: Array<String>) {
+//        SwingActiveRender.TARGET_FPS = 60
+
         val frame = JFrame("Test")
         val panel = JPanel()
         panel.layout = FlowLayout()
+
         val label = JLabel("This is a label!")
-        val button = JButton()
-        button.text = "Press me"
-        button.addActionListener { println("Clicked button!") }
+
+        val buttonApp = JButton()
+        buttonApp.text = "Press me App"
+        buttonApp.addActionListener {
+            println("Clicked button App!")
+            manageApp(frame)
+        }
+
+        val buttonScreen = JButton()
+        buttonScreen.text = "Press me Screen"
+        buttonScreen.addActionListener {
+            println("Clicked button Screen!")
+            manageScreen(frame)
+        }
 
         panel.add(label)
-        panel.add(button)
+        panel.add(buttonApp)
+        panel.add(buttonScreen)
         frame.add(panel)
         frame.setSize(900, 600)
         frame.defaultCloseOperation = JFrame.EXIT_ON_CLOSE
@@ -50,6 +67,17 @@ object NotifyTest {
 
         ScreenUtil.showOnSameScreenAsMouse_Center(frame)
 
+        manageApp(frame)
+        manageScreen(frame)
+    }
+
+    private val notifyCount = AtomicInteger(0)
+
+    fun manageApp(frame: JFrame) {
+        timerApp(frame, Position.BOTTOM, TimeUnit.SECONDS.toMillis(20))
+    }
+
+    fun manageScreen(frame: JFrame) {
         // The purpose of this, is to display this image AS A SQUARE!
         val resourceAsStream = LocationResolver.getResourceAsStream("notify-dark.png")
         var image: Image? = null
@@ -66,196 +94,56 @@ object NotifyTest {
 
         image!!
 
-//        bottomRightInFrame(3, frame)
-//        topLeftInFrame(2, frame)
-
-//        react()
-        topRightMonitor(4)
-//        topAndBottomRightMonitor(1)
-//        bottomLeftScaled(image)
-//        bottomLeftStacking(3, image)
+        screen(image, Position.BOTTOM, TimeUnit.SECONDS.toMillis(20))
     }
 
-    fun react() {
+
+    private fun screen(image: Image, position: Position, durationMs: Long = 0) {
+        val count = notifyCount.getAndIncrement()
+
         val notify = Notify.create()
-        notify.title("Notify title modify")
-                    .text("This is a notification popup message This is a notification popup message This is a " +
-                            "notification popup message")
-                    .hideAfter(13000)
-                    .position(Position.TOP_RIGHT)
-                    // .setScreen(0)
-                    .theme(Theme.defaultDark)
-                    // .shake(1300, 4)
-                    .shake(4300, 10)
-//                    .hideCloseButton() // if the hideButton is visible, then it's possible to change things when clicked
-                    .onClickAction {
-                        text = "HOWDY"
-                        System.err.println("Notification clicked on!")
-                    }
-            notify.show()
-            try {
-                Thread.sleep(3000)
-            } catch (e: InterruptedException) {
-                e.printStackTrace()
-            }
-    }
+             .title("Notify title $count")
+             .text("""This is a notification $count popup message This is a notification popup message This is a notification popup message""")
+             .hideAfter(durationMs)
+             .position(position)
+            // .setScreen(0)
+            // .darkStyle()
+             .theme(Theme.defaultDark)
+            // .shake(1300, 4)
+            // .shake(1300, 10)
+            // .hideCloseButton()
+             .onClickAction {
+                 text = "HI: $count"
+                 System.err.println("Notification $count clicked on!")
+             }
 
-    private fun topRightMonitor(count: Int) {
-        for (i in 0 until count) {
-            var notify = Notify.create()
-                    .title("Notify title $i")
-                    .text("This is a notification " + i + " popup message This is a notification popup message This is a " +
-                            "notification popup message")
-                    .position(Position.TOP_RIGHT)
-                    // .setScreen(0)
-                    .theme(Theme.defaultDark)
-                    // .shake(1300, 4)
-//                    .shake(18300, 10)
-//                    .hideCloseButton()
-                    .onClickAction { System.err.println("Notification $i clicked on!") }
-//            if (i == 0) {
-                notify.hideAfter(2100)
-//            }
-            notify.show()
-            try {
-                Thread.sleep(1000)
-            } catch (e: InterruptedException) {
-                e.printStackTrace()
-            }
-        }
-    }
-
-    private fun topAndBottomRightMonitor(count: Int) {
-        for (i in 0 until count) {
-             Notify.create()
-                    .title("Notify title $i")
-                    .text("This is a notification " + i + " top popup message This is a notification popup message This is a " +
-                            "notification popup message")
-                    .hideAfter(4300)
-                    .position(Position.TOP_RIGHT)
-                    // .setScreen(0)
-                    .theme(Theme.defaultDark)
-                    // .shake(1300, 4)
-//                    .shake(4300, 10)
-//                    .hideCloseButton()
-                    .onClickAction { System.err.println("Notification $i clicked on!") }
-                    .show()
-
-            Notify.create()
-                .title("Notify title $i")
-                .text("This is a notification " + i + " bottom popup message This is a notification popup message This is a " +
-                              "notification popup message")
-                .hideAfter(4300)
-                .position(Position.BOTTOM_RIGHT)
-                // .setScreen(0)
-                .theme(Theme.defaultDark)
-                // .shake(1300, 4)
-//                    .shake(4300, 10)
-//                    .hideCloseButton()
-                .onClickAction { System.err.println("Notification $i clicked on!") }
-                .show()
-            try {
-                Thread.sleep(2000)
-            } catch (e: InterruptedException) {
-                e.printStackTrace()
-            }
-        }
-    }
-
-    fun bottomLeftScaled(image: Image) {
-       val notify = Notify.create()
-                .title("Notify scaled")
-                .text("This is a notification popup message scaled This is a notification popup message This is a " +
-                        "notification popup message scaled ") // .hideAfter(13000)
-                .position(Position.BOTTOM_LEFT) //                       .setScreen(0)
-                //                            .darkStyle()
-                // .shake(1300, 4)
-                // .shake(1300, 10)
-                // .hideCloseButton()
-                .onClickAction { System.err.println("Notification scaled clicked on!") }
         notify.image(image)
         notify.show()
+//            notify.showConfirm()
     }
 
-    fun bottomLeftStacking(count: Int, image: Image) {
-        var notify: Notify
+    fun timerApp(frame: JFrame, position: Position, durationMs: Long = 0) {
+        val count = notifyCount.getAndIncrement()
 
-        for (i in 0 until count) {
-            notify = Notify.create()
-                    .title("Notify title $i")
-                    .text("This is a notification " + i + " popup message This is a notification popup message This is a " +
-                            "notification popup message")
-                    // .hideAfter(13000)
-                    .position(Position.BOTTOM_LEFT)
-                    // .setScreen(0)
-                    // .darkStyle()
-                    // .shake(1300, 4)
-                    // .shake(1300, 10)
-                    // .hideCloseButton()
-                    .onClickAction { System.err.println("Notification $i clicked on!") }
-            if (i == 0) {
-                notify.image(image)
-                notify.show()
-            } else {
-                notify.showConfirm()
+        val notify = Notify.create()
+            .title("Notify title $count")
+            .text("This is a notification $count popup message This is a notification popup message This is a notification popup message")
+            .hideAfter(durationMs)
+            .position(position)
+            // .position(Pos.CENTER)
+            // .setScreen(0)
+            .theme(Theme.defaultDark)
+            // .shake(1300, 4)
+//            .shake(13200, 10)
+            .attach(frame)
+
+            .onClickAction {
+                text = "HI: $count"
+                System.err.println("Notification $count clicked on!")
             }
-            try {
-                Thread.sleep(1000)
-            } catch (e: InterruptedException) {
-                e.printStackTrace()
-            }
-        }
-    }
-
-    fun topLeftInFrame(count: Int, frame: JFrame) {
-        var notify: Notify
-        for (i in 0 until count) {
-            notify = Notify.create()
-                .title("Notify title $i")
-                .text("This is a notification " + i + " popup message This is a notification popup message This is a " +
-                              "notification popup message")
-                .hideAfter(13000)
-                .position(Position.TOP_LEFT) // .position(Pos.CENTER)
-                // .setScreen(0)
-                //      .darkStyle()
-                // .shake(1300, 4)
-                // .shake(1300, 10)
-                .attach(frame) // .hideCloseButton()
-                .onClickAction { System.err.println("Notification $i clicked on!") }
-            notify.showWarning()
-
-            try {
-                Thread.sleep(3000)
-            } catch (e: InterruptedException) {
-                e.printStackTrace()
-            }
-        }
-    }
-
-    fun bottomRightInFrame(count: Int, frame: JFrame) {
-        var notify: Notify
-        for (i in 0 until count) {
-            notify = Notify.create()
-                .title("Notify title $i")
-                .text("This is a notification " + i + " popup message This is a notification popup message This is a " +
-                              "notification popup message")
-//                .hideAfter(13000)
-                .position(Position.BOTTOM_RIGHT)
-                // .position(Pos.CENTER)
-                // .setScreen(0)
-                .theme(Theme.defaultDark)
-                // .shake(1300, 4)
-                .shake(13200, 10)
-                .attach(frame)
-//                .hideCloseButton()
-                .onClickAction { System.err.println("Notification $i clicked on!") }
-            notify.showWarning()
-
-            try {
-                Thread.sleep(1000)
-            } catch (e: InterruptedException) {
-                e.printStackTrace()
-            }
-        }
+//                    .hideCloseButton() // if the hideButton is visible, then it's possible to change things when clicked
+            .attach(frame)
+        notify.show()
+//        notify.showWarning()
     }
 }
