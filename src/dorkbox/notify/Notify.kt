@@ -303,16 +303,27 @@ class Notify private constructor() {
     }
 
     /**
-     * Specifies the duration that the notification should show, after which it will be hidden. 0 means to show forever. By default it
-     * will show forever
+     * Specifies the duration that the notification should show, after which it will be hidden.
+     *
+     * 0 means to show forever. By default, it will show until closed. The maximum value is Integer.MAX
+     */
+    fun hideAfter(durationInMillis: Long): Notify {
+        require(durationInMillis > 0) { "duration must be greater than 0" }
+        require(durationInMillis < Integer.MAX_VALUE) { "duration must be less than Integer.MAX" }
+
+        hideAfterDurationInMillis = durationInMillis.toInt()
+        return this
+    }
+
+    /**
+     * Specifies the duration that the notification should show, after which it will be hidden.
+     *
+     * 0 means to show forever. By default, it will show until closed. The maximum value is Integer.MAX
      */
     fun hideAfter(durationInMillis: Int): Notify {
-        hideAfterDurationInMillis = if (durationInMillis < 0) {
-            0
-        } else {
-            durationInMillis
-        }
+        require(durationInMillis > 0) { "duration must be greater than 0" }
 
+        hideAfterDurationInMillis = durationInMillis
         return this
     }
 
