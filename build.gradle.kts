@@ -26,7 +26,7 @@ plugins {
     id("com.dorkbox.GradleUtils") version "3.18"
     id("com.dorkbox.Licensing") version "2.28"
     id("com.dorkbox.VersionUpdate") version "2.8"
-    id("com.dorkbox.GradlePublish") version "1.20"
+    id("com.dorkbox.GradlePublish") version "1.22"
 
     kotlin("jvm") version "1.9.0"
 }
@@ -61,6 +61,7 @@ licensing {
     }
 }
 
+val exampleCompile by configurations.creating { extendsFrom(configurations.implementation.get()) }
 sourceSets {
     main {
         resources {
@@ -98,9 +99,29 @@ tasks.jar.get().apply {
 dependencies {
     api("com.dorkbox:PropertyLoader:1.4")
     api("com.dorkbox:TweenEngine:9.2")
-    api("com.dorkbox:SwingActiveRender:1.4")
+    api("com.dorkbox:SwingActiveRender:1.5")
     api("com.dorkbox:Updates:1.1")
     api("com.dorkbox:Utilities:1.48")
+}
+
+task<Jar>("jarExample") {
+    archiveBaseName.set("Notify-Example")
+    group = BasePlugin.BUILD_GROUP
+    description = "Create an all-in-one example for testing, on a standard Java installation"
+
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    outputs.upToDateWhen { false }
+
+    from(sourceSets["main"].output)
+    from(sourceSets["test"].output)
+
+    from(exampleCompile.map { if (it.isDirectory) it else zipTree(it) }) {
+        exclude("META-INF/*.DSA", "META-INF/*.SF")
+    }
+
+    manifest {
+        attributes["Main-Class"] = "dorkbox.notify.NotifyTest"
+    }
 }
 
 publishToSonatype {
