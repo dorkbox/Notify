@@ -25,6 +25,8 @@ import java.awt.*
 import java.awt.image.BufferedImage
 import javax.swing.JWindow
 
+
+
 // we can't use regular popup, because if we have no owner, it won't work!
 // instead, we just create a JWindow and use it to hold our content
 internal class DesktopNotify(override val notification: Notify) : JWindow(), NotifyType<DesktopNotify> {
@@ -72,12 +74,7 @@ internal class DesktopNotify(override val notification: Notify) : JWindow(), Not
 
     // for the progress bar. we directly draw this onscreen
     // non-volatile because it's always accessed in the active render thread
-    private var prevProgress = 0
     override var progress = 0
-        set(value) {
-            prevProgress = field
-            field = value
-        }
 
     // The button is "hittable" from the entire corner
     private val closeButton: Rectangle
@@ -154,7 +151,14 @@ internal class DesktopNotify(override val notification: Notify) : JWindow(), Not
 
 
 
-    override fun paint(g: Graphics) {
+    override fun paint(gIgnore: Graphics) {
+        // Get the graphics context from the buffer strategy
+        val bufferStrategy = bufferStrategy
+
+        val g = bufferStrategy.drawGraphics
+
+        g.clearRect(0, 0, width, height) // Clear the screen
+
         // we cache the text + image (to an image), the two states of the close "button" and then always render the progressbar
         try {
             draw(g)
@@ -182,6 +186,10 @@ internal class DesktopNotify(override val notification: Notify) : JWindow(), Not
             } catch (ignored2: Exception) {
             }
         }
+
+        // Dispose the graphics context and show the buffer
+        g.dispose()
+        bufferStrategy.show()
     }
 
     private fun draw(g: Graphics) {
@@ -196,7 +204,7 @@ internal class DesktopNotify(override val notification: Notify) : JWindow(), Not
         }
 
         // the progress bar can change (only getting bigger!), so we always draw it when it grows
-        if (progress > 0 && prevProgress != progress) {
+        if (progress > 0) {
             // draw the progress bar along the bottom
             g.color = notification.theme.progress_FG
             g.fillRect(0, Notify.HEIGHT - 2, progress, 2)
