@@ -11,6 +11,8 @@ This small library can display notifications on any screen, in any corner.
     * [Maven](https://github.com/dorkbox/Notify#maven)
     * [Scala SBT](https://github.com/dorkbox/Notify#scala-sbt)
 * [Basic Usage](https://github.com/dorkbox/Notify#basic-usage)
+  * [Display Desktop Notification](https://github.com/dorkbox/Notify#display-desktop-notification)
+  * [Display JFrame Notification](https://github.com/dorkbox/Notify#display-jframe-notification)
 * [Features](https://github.com/dorkbox/Notify#features)
 * [Release Notes](https://github.com/dorkbox/Notify#release-notes)
 
@@ -43,12 +45,50 @@ libraryDependencies += "com.dorkbox" % "Notify" % "4.5"
 ```
 
 ## Basic Usage
+
+### Display Desktop Notification
+
 ```java
-Notify.create()
-      .title("Title Text")
-      .text("Hello World!")
-      .useDarkStyle()
-      .showWarning();
+public class Example {
+  public static void main(final String[] args) {
+    Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(() -> {
+      Notify.Companion.create()
+              .title("Title Text")
+              .text("Hello World!")
+              .theme(Theme.Companion.getDefaultDark())
+              .position(Position.BOTTOM_RIGHT)
+              .hideAfter(1500)
+              .showWarning();
+    }, 0, 2, TimeUnit.SECONDS);
+  }
+}
+```
+
+### Display JFrame Notification
+
+```java
+public class Example {
+  public static void main(final String[] args) {
+    SwingUtilities.invokeLater(() -> {
+      final var frame = new JFrame("Example");;
+      frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+      frame.setPreferredSize(new Dimension(512, 512));
+      frame.setLocationRelativeTo(null);
+      frame.pack();
+      frame.setVisible(true);
+
+      final var notify = Notify.Companion.create()
+                                 .title("Example Title")
+                                 .text("Example Message")
+                                 .theme(Theme.Companion.getDefaultDark())
+                                 .position(Position.BOTTOM_RIGHT)
+                                 .hideAfter(1500)
+                                 .attach(frame);
+      
+      Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(notify::showWarning, 0, 2, TimeUnit.SECONDS);
+    });
+  }
+}
 ```
 
 ## Features
