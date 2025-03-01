@@ -106,9 +106,4 @@ https://oss.sonatype.org/content/repositories/releases/com/dorkbox/Notify/
 https://oss.sonatype.org/content/repositories/releases/com/dorkbox/TweenEngine/      
 https://oss.sonatype.org/content/repositories/releases/com/dorkbox/ObjectPool/  
 
-https://repo1.maven.org/maven2/org/slf4j/slf4j-api/      
-
-
-License
----------
-This project is © 2023 dorkbox llc, and is distributed under the terms of the Apache v2.0 License. See file "LICENSE" for further references.
+https://repo1.maven.org/maven2/org/slf4j/slf4j-api/
