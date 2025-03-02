@@ -24,7 +24,7 @@ import dorkbox.util.ScreenUtil
 import java.awt.*
 import java.awt.image.BufferedImage
 import javax.swing.JWindow
-
+import javax.swing.UIManager
 
 
 // we can't use regular popup, because if we have no owner, it won't work!
@@ -114,16 +114,16 @@ internal class DesktopNotify(override val notification: Notify) : JWindow(), Not
         closeButton = Rectangle(NotifyType.closeX, NotifyType.closeY,
                                 18, 18)
 
-        background = notification.theme.panel_BG
+        background = UIManager.getColor("Panel.background")
 
         // now we setup the rendering of the image
         refresh()
     }
 
     override fun refresh() {
-        cachedImage = renderBackgroundInfo(notification.title, notification.text, notification.theme, notification.image)
-        cachedClose = renderCloseButton(notification.theme, false)
-        cachedCloseEnabled = renderCloseButton(notification.theme, true)
+        cachedImage = renderBackgroundInfo(notification.title, notification.text, notification.image)
+        cachedClose = renderCloseButton(false)
+        cachedCloseEnabled = renderCloseButton(true)
 
         val bounds = LAFUtil.getGraphics(notification.screen)
         val point = Point(bounds.getX().toInt(), bounds.getY().toInt())
@@ -206,8 +206,8 @@ internal class DesktopNotify(override val notification: Notify) : JWindow(), Not
         // the progress bar can change (only getting bigger!), so we always draw it when it grows
         if (progress > 0) {
             // draw the progress bar along the bottom
-            g.color = notification.theme.progress_FG
-            g.fillRect(0, Notify.HEIGHT - 2, progress, 2)
+            g.color = UIManager.getColor("ProgressBar.foreground")
+            g.fillRect(0, Notify.HEIGHT - 3, progress, 2) // "-3" to account for the border
         }
     }
 

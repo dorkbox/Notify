@@ -24,6 +24,7 @@ import java.awt.Stroke
 import java.awt.image.BufferedImage
 import javax.swing.ImageIcon
 import javax.swing.JLabel
+import javax.swing.UIManager
 
 internal interface NotifyType<T> {
     companion object {
@@ -59,7 +60,7 @@ internal interface NotifyType<T> {
     var progress: Int
 
 
-    fun renderBackgroundInfo(title: String, textBody: String, theme: Theme, imageIcon: ImageIcon?): BufferedImage {
+    fun renderBackgroundInfo(title: String, textBody: String, imageIcon: ImageIcon?): BufferedImage {
         val image = BufferedImage(Notify.WIDTH, Notify.HEIGHT, BufferedImage.TYPE_INT_ARGB)
         val g2 = image.createGraphics()
 
@@ -73,14 +74,20 @@ internal interface NotifyType<T> {
         g2.setRenderingHint(RenderingHints.KEY_STROKE_CONTROL, RenderingHints.VALUE_STROKE_PURE)
 
         try {
-            g2.color = theme.panel_BG
+            val font = UIManager.getFont("Panel.font")
+
+            g2.color = UIManager.getColor("Panel.background")
             g2.fillRect(0, 0, Notify.WIDTH, Notify.HEIGHT)
 
-            // Draw the title text
-            g2.color = theme.titleText_FG
-            g2.font = theme.titleTextFont
-            g2.drawString(title, 5, 20)
+            // Draw the border.
+            g2.color = UIManager.getColor("Panel.foreground")
+            g2.drawRect(0, 0, Notify.WIDTH, Notify.HEIGHT)
 
+            // Draw the title text
+            val textColor = UIManager.getColor("Panel.foreground")
+            g2.color = textColor
+            g2.font = font
+            g2.drawString(title, 5, 20)
 
             var posX = 10
             val posY = -8
@@ -115,10 +122,9 @@ internal interface NotifyType<T> {
             }
             text.append("</html>")
 
-
             val mainTextLabel = JLabel()
-            mainTextLabel.foreground = theme.mainText_FG
-            mainTextLabel.font = theme.mainTextFont
+            mainTextLabel.foreground = textColor
+            mainTextLabel.font = font
             mainTextLabel.text = text.toString()
             mainTextLabel.setBounds(0, 0, Notify.WIDTH - posX - 2, Notify.HEIGHT)
 
@@ -132,20 +138,20 @@ internal interface NotifyType<T> {
         return image
     }
 
-    fun renderCloseButton(theme: Theme, enabled: Boolean): BufferedImage {
+    fun renderCloseButton(enabled: Boolean): BufferedImage {
         // manually draw the close button
 
         val image = BufferedImage(Notify.WIDTH, Notify.HEIGHT, BufferedImage.TYPE_INT_ARGB)
         val g2 = image.createGraphics()
 
-        g2.color = theme.panel_BG
+        g2.color = UIManager.getColor("Panel.background")
         g2.stroke = stroke
 
 
         if (enabled) {
             g2.color = Color.RED
         } else {
-            g2.color = theme.closeX_FG
+            g2.color = Color.RED.darker()
         }
 
         // draw the X

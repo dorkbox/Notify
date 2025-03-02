@@ -198,13 +198,6 @@ class Notify private constructor() {
         }
 
     @Volatile
-    var theme = Theme.defaultLight
-        set(value) {
-            field = value
-            notifyPopup?.refresh()
-        }
-
-    @Volatile
     var position = Position.BOTTOM_RIGHT
 
     @Volatile
@@ -340,15 +333,6 @@ class Notify private constructor() {
      */
     fun onClickAction(onAction: Notify.()->Unit): Notify {
         onClickAction = onAction
-        return this
-    }
-
-    /**
-     * Specifies what the theme should be, if other than the default. This will always take precedence over the defaults.
-     */
-    fun theme(theme: Theme): Notify {
-        this.theme = theme
-        notifyPopup?.refresh()
         return this
     }
 
