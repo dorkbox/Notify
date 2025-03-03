@@ -1,25 +1,97 @@
-Notify
-======
-
-###### [![Dorkbox](https://badge.dorkbox.com/dorkbox.svg "Dorkbox")](https://git.dorkbox.com/dorkbox/Notify) [![Github](https://badge.dorkbox.com/github.svg "Github")](https://github.com/dorkbox/Notify) [![Gitlab](https://badge.dorkbox.com/gitlab.svg "Gitlab")](https://gitlab.com/dorkbox/Notify)
-
+# Notify
 
 Cross platform notification popups, similar to "Growl" on OSX, "Toasts" on Windows, and "Notifications" on Ubuntu.
 
 This small library can display notifications on any screen, in any corner.
 
+## Table of Contents
 
-Basic usage 
----------
-```java
-Notify.create()
-      .title("Title Text")
-      .text("Hello World!")
-      .useDarkStyle()
-      .showWarning();
+* [Installation](https://github.com/dorkbox/Notify#installation)
+    * [Gradle](https://github.com/dorkbox/Notify#gradle)
+    * [Maven](https://github.com/dorkbox/Notify#maven)
+    * [Scala SBT](https://github.com/dorkbox/Notify#scala-sbt)
+* [Basic Usage](https://github.com/dorkbox/Notify#basic-usage)
+  * [Display Desktop Notification](https://github.com/dorkbox/Notify#display-desktop-notification)
+  * [Display JFrame Notification](https://github.com/dorkbox/Notify#display-jframe-notification)
+* [Features](https://github.com/dorkbox/Notify#features)
+* [Release Notes](https://github.com/dorkbox/Notify#release-notes)
+
+## Installation 
+
+Notify is hosted on the [Maven Central Repository](https://mvnrepository.com/artifact/com.dorkbox/Notify) and
+can be included in your project by adding it as a dependency in your build file.
+
+### ![Gradle](https://i.imgur.com/qtc6bXq.png?1) Gradle
+```
+dependencies {
+	implementation 'com.dorkbox:Notify:4.5'
+}
 ```
 
-Primary Features:
+### ![Maven](https://i.imgur.com/2TZzobp.png?1) Maven
+
+```xml
+<dependency>
+    <groupId>com.dorkbox</groupId>
+    <artifactId>Notify</artifactId>
+    <version>4.5</version>
+</dependency>
+```
+
+### ![Scala SBT](https://i.imgur.com/Nqv3mVd.png?1) Scala SBT
+
+```
+libraryDependencies += "com.dorkbox" % "Notify" % "4.5"
+```
+
+## Basic Usage
+
+### Display Desktop Notification
+
+```java
+public class Example {
+  public static void main(final String[] args) {
+    Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(() -> {
+      Notify.Companion.create()
+              .title("Title Text")
+              .text("Hello World!")
+              .theme(Theme.Companion.getDefaultDark())
+              .position(Position.BOTTOM_RIGHT)
+              .hideAfter(1500)
+              .showWarning();
+    }, 0, 2, TimeUnit.SECONDS);
+  }
+}
+```
+
+### Display JFrame Notification
+
+```java
+public class Example {
+  public static void main(final String[] args) {
+    SwingUtilities.invokeLater(() -> {
+      final var frame = new JFrame("Example");;
+      frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+      frame.setPreferredSize(new Dimension(512, 512));
+      frame.setLocationRelativeTo(null);
+      frame.pack();
+      frame.setVisible(true);
+
+      final var notify = Notify.Companion.create()
+                                 .title("Example Title")
+                                 .text("Example Message")
+                                 .theme(Theme.Companion.getDefaultDark())
+                                 .position(Position.BOTTOM_RIGHT)
+                                 .hideAfter(1500)
+                                 .attach(frame);
+      
+      Executors.newSingleThreadScheduledExecutor().scheduleAtFixedRate(notify::showWarning, 0, 2, TimeUnit.SECONDS);
+    });
+  }
+}
+```
+
+## Features
 
 1. Can specify which screen to use for notification.
 2. Can specify which corner (center is also possible) to use for notification 
@@ -69,46 +141,5 @@ Notify.MOVE_DURATION    (type float, default value '1.0F')
 
 ![dark theme](https://raw.githubusercontent.com/dorkbox/Notify/master/notify-dark.png)
 
-
-&nbsp; 
-&nbsp; 
-
-Release Notes 
----------
+## Release Notes
 It is important to note that notifications for an application use the [glassPane](https://docs.oracle.com/javase/tutorial/uiswing/components/rootpane.html#glasspane) and sets it's ````layoutManager```` to ````null````. This can cause problems with some applications, and you'll need to work around this limitation.
-
-Maven Info
----------
-```
-<dependencies>
-    ...
-    <dependency>
-      <groupId>com.dorkbox</groupId>
-      <artifactId>Notify</artifactId>
-      <version>4.5</version>
-    </dependency>
-</dependencies>
-```
-
-Gradle Info
----------
-```
-dependencies {
-    ...
-    compile "com.dorkbox:Notify:4.5"
-}
-```
-
-
-Or if you don't want to use Maven, you can access the files directly here:  
-https://oss.sonatype.org/content/repositories/releases/com/dorkbox/Notify/  
-
-https://oss.sonatype.org/content/repositories/releases/com/dorkbox/TweenEngine/      
-https://oss.sonatype.org/content/repositories/releases/com/dorkbox/ObjectPool/  
-
-https://repo1.maven.org/maven2/org/slf4j/slf4j-api/      
-
-
-License
----------
-This project is © 2023 dorkbox llc, and is distributed under the terms of the Apache v2.0 License. See file "LICENSE" for further references.
