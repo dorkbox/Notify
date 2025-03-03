@@ -28,7 +28,7 @@ plugins {
     id("com.dorkbox.VersionUpdate") version "2.8"
     id("com.dorkbox.GradlePublish") version "1.22"
 
-    kotlin("jvm") version "1.9.0"
+    kotlin("jvm") version "2.1.10"
 }
 
 object Extras {
