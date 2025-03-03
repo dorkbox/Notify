@@ -22,7 +22,7 @@ import java.awt.Color
 import java.awt.RenderingHints
 import java.awt.Stroke
 import java.awt.image.BufferedImage
-import javax.swing.ImageIcon
+import javax.swing.Icon
 import javax.swing.JLabel
 
 internal interface NotifyType<T> {
@@ -59,7 +59,7 @@ internal interface NotifyType<T> {
     var progress: Int
 
 
-    fun renderBackgroundInfo(title: String, textBody: String, theme: Theme, imageIcon: ImageIcon?): BufferedImage {
+    fun renderBackgroundInfo(title: String, textBody: String, theme: Theme, icon: Icon?): BufferedImage {
         val image = BufferedImage(Notify.WIDTH, Notify.HEIGHT, BufferedImage.TYPE_INT_ARGB)
         val g2 = image.createGraphics()
 
@@ -87,11 +87,10 @@ internal interface NotifyType<T> {
             var textLengthLimit = 108
 
             // ICON
-            if (imageIcon != null) {
+            if (icon != null) {
                 textLengthLimit = 88
                 posX = 60
-                // Draw the image
-                imageIcon.paintIcon(null, g2, 5, 30)
+                icon.paintIcon(null, g2, 5, (Notify.HEIGHT + 20 - icon.iconHeight) / 2)
             }
 
             // Draw the main text

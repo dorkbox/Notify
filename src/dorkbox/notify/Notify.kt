@@ -17,16 +17,14 @@ package dorkbox.notify
 
 import dorkbox.propertyLoader.Property
 import dorkbox.util.ImageUtil
-import dorkbox.util.LocationResolver
 import dorkbox.util.SwingUtil
 import java.awt.Image
 import java.awt.image.BufferedImage
-import java.io.IOException
-import java.io.InputStream
 import java.lang.ref.SoftReference
-import javax.imageio.ImageIO
+import javax.swing.Icon
 import javax.swing.ImageIcon
 import javax.swing.JFrame
+import javax.swing.UIManager
 
 /**
  * Popup notification messages, similar to the popular "Growl" notification system on macosx, that display in the corner of the monitor.
@@ -47,11 +45,6 @@ import javax.swing.JFrame
 @Suppress("unused", "MemberVisibilityCanBePrivate")
 class Notify private constructor() {
     companion object {
-        const val DIALOG_CONFIRM = "dialog-confirm.png"
-        const val DIALOG_INFORMATION = "dialog-information.png"
-        const val DIALOG_WARNING = "dialog-warning.png"
-        const val DIALOG_ERROR = "dialog-error.png"
-
         /**
          * The width of a notification
          */
@@ -99,7 +92,7 @@ class Notify private constructor() {
          */
         @Property
         var IMAGE_PATH = "resources"
-        private val imageCache = mutableMapOf<String, SoftReference<ImageIcon>>()
+        private val imageCache = mutableMapOf<String, SoftReference<Icon>>()
 
         /**
          * Gets the version number.
@@ -157,27 +150,6 @@ class Notify private constructor() {
 
             imageCache[imageName] = SoftReference(ImageIcon(bufferedImage))
         }
-
-        private fun getImage(imageName: String): ImageIcon {
-            var resourceAsStream: InputStream? = null
-
-            var image = imageCache[imageName]?.get()
-
-            try {
-                if (image == null) {
-                    // String name = IMAGE_PATH + File.separatorChar + imageName;
-                    resourceAsStream = LocationResolver.getResourceAsStream(imageName)
-                    image = ImageIcon(ImageIO.read(resourceAsStream))
-                    imageCache[imageName] = SoftReference(image)
-                }
-            } catch (e: IOException) {
-                e.printStackTrace()
-            } finally {
-                resourceAsStream?.close()
-            }
-
-            return image!!
-        }
     }
 
     @Volatile
@@ -224,7 +196,7 @@ class Notify private constructor() {
     var screen = Short.MIN_VALUE.toInt()
 
     @Volatile
-    var image: ImageIcon? = null
+    var image: Icon? = null
         set(value) {
             field = value
             notifyPopup?.refresh()
@@ -365,7 +337,7 @@ class Notify private constructor() {
      * Shows the notification with the built-in 'warning' image.
      */
     fun showWarning() {
-        image = getImage(DIALOG_WARNING)
+        image = UIManager.getIcon("OptionPane.warningIcon")
         show()
     }
 
@@ -373,7 +345,7 @@ class Notify private constructor() {
      * Shows the notification with the built-in 'information' image.
      */
     fun showInformation() {
-        image = getImage(DIALOG_INFORMATION)
+        image = UIManager.getIcon("OptionPane.informationIcon")
         show()
     }
 
@@ -381,7 +353,7 @@ class Notify private constructor() {
      * Shows the notification with the built-in 'error' image.
      */
     fun showError() {
-        image = getImage(DIALOG_ERROR)
+        image = UIManager.getIcon("OptionPane.errorIcon")
         show()
     }
 
@@ -389,7 +361,7 @@ class Notify private constructor() {
      * Shows the notification with the built-in 'confirm' image.
      */
     fun showConfirm() {
-        image = getImage(DIALOG_CONFIRM)
+        image = UIManager.getIcon("OptionPane.questionIcon")
         show()
     }
 
