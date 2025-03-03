@@ -24,6 +24,7 @@ import java.awt.event.MouseAdapter
 import java.awt.image.BufferedImage
 import javax.swing.JFrame
 import javax.swing.JPanel
+import javax.swing.UIManager
 
 // this is a child to a Jframe/window (instead of globally to the screen).
 internal class AppNotify(override val notification: Notify): Canvas(), NotifyType<AppNotify> {
@@ -129,7 +130,7 @@ internal class AppNotify(override val notification: Notify): Canvas(), NotifyTyp
 
         super.setVisible(false)
         isFocusable = true
-        background = notification.theme.panel_BG
+        background = UIManager.getColor("Panel.background")
 
 
         idAndPosition = parent.name + ":" + notification.position
@@ -173,9 +174,9 @@ internal class AppNotify(override val notification: Notify): Canvas(), NotifyTyp
     }
 
     override fun refresh() {
-        cachedImage = renderBackgroundInfo(notification.title, notification.text, notification.theme, notification.image)
-        cachedClose = renderCloseButton(notification.theme, false)
-        cachedCloseEnabled = renderCloseButton(notification.theme, true)
+        cachedImage = renderBackgroundInfo(notification.title, notification.text, notification.image)
+        cachedClose = renderCloseButton(false)
+        cachedCloseEnabled = renderCloseButton(true)
 
         idAndPosition = parent.name + ":" + notification.position
 
@@ -261,8 +262,8 @@ internal class AppNotify(override val notification: Notify): Canvas(), NotifyTyp
         // the progress bar can change, so we always draw it every time
         if (progress > 0) {
             // draw the progress bar along the bottom
-            g.color = notification.theme.progress_FG
-            g.fillRect(0, Notify.HEIGHT - 2, progress, 2)
+            g.color = UIManager.getColor("ProgressBar.foreground")
+            g.fillRect(0, Notify.HEIGHT - 3, progress, 2) // "-3" to account for the border
         }
     }
 
