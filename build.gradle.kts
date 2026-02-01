@@ -97,11 +97,11 @@ tasks.jar.get().apply {
 }
 
 dependencies {
-    api("com.dorkbox:PropertyLoader:1.4")
+    api("com.dorkbox:PropertyLoader:2.0")
     api("com.dorkbox:TweenEngine:9.2")
     api("com.dorkbox:SwingActiveRender:1.5")
     api("com.dorkbox:Updates:1.1")
-    api("com.dorkbox:Utilities:1.48")
+    api("com.dorkbox:Utilities:2.08")
 }
 
 task<Jar>("jarExample") {
