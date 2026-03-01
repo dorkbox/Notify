@@ -101,7 +101,7 @@ dependencies {
     api("com.dorkbox:TweenEngine:9.2")
     api("com.dorkbox:SwingActiveRender:1.5")
     api("com.dorkbox:Updates:1.1")
-    api("com.dorkbox:Utilities:1.48")
+    api("com.dorkbox:Utilities:2.0")
 }
 
 task<Jar>("jarExample") {
